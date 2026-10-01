@@ -1,0 +1,98 @@
+- id: AGT-001
+  title: A block can be reasoned about using its Concept Pack and direct dependency
+    contracts
+  level: MUST
+  scope:
+  - block
+  - concept-pack
+  statement: A block can be reasoned about using its Concept Pack and direct dependency
+    contracts.
+  rationale: Bound agent context and surface uncertainty.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: AGT-001-VIOLATION
+  waiver:
+    allowed: false
+- id: AGT-002
+  title: Implementation agents require unrestricted repository context
+  level: MUST NOT
+  scope:
+  - block
+  - concept-pack
+  statement: Implementation agents require unrestricted repository context.
+  rationale: Bound agent context and surface uncertainty.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: AGT-002-VIOLATION
+  waiver:
+    allowed: false
+- id: AGT-003
+  title: Concept Packs remain below a defined complexity/context budget
+  level: SHOULD
+  scope:
+  - block
+  - concept-pack
+  statement: Concept Packs remain below a defined complexity/context budget.
+  rationale: Bound agent context and surface uncertainty.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: warning
+    code: AGT-003-VIOLATION
+  waiver:
+    allowed: false
+- id: AGT-004
+  title: Agents receive explicit modification boundaries
+  level: MUST
+  scope:
+  - block
+  - concept-pack
+  statement: Agents receive explicit modification boundaries.
+  rationale: Bound agent context and surface uncertainty.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: AGT-004-VIOLATION
+  waiver:
+    allowed: false
+- id: AGT-005
+  title: Unknown architectural decisions are surfaced rather than silently inferred
+  level: MUST
+  scope:
+  - block
+  - concept-pack
+  statement: Unknown architectural decisions are surfaced rather than silently inferred.
+  rationale: Bound agent context and surface uncertainty.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: AGT-005-VIOLATION
+  waiver:
+    allowed: false
+- id: AGT-006
+  title: Concept definition precedes implementation planning
+  level: MUST
+  scope:
+  - block
+  - concept-pack
+  statement: Concept definition precedes implementation planning.
+  rationale: Bound agent context and surface uncertainty.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: AGT-006-VIOLATION
+  waiver:
+    allowed: false

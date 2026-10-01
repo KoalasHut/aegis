@@ -1,0 +1,31 @@
+protocolVersion: 0.1.0
+assignmentId: EXAMPLE-discuss-001
+role: discussion
+objective: Review a proposed project capability; do not implement it.
+approval:
+  issuer: EXAMPLE-domain-owner
+  source: example://not-live/approval
+  statement: Illustrative discussion assignment only.
+inputs:
+- uri: example://change-brief
+  revision: example-revision-1
+readPaths:
+- framework/contexts/
+writePaths: []
+allowedEffects: []
+requiredOutputs:
+- Inline decision brief
+acceptanceCriteria:
+- Proposals and approvals are distinguished; no implementation edits.
+window:
+  startsWhen: Operator admits this assignment
+  endsWhen: first terminal handoff
+  resumeRequiresNewAssignment: true
+enforcement:
+  mode: supervised-pilot
+  verifiedControls: []
+  gaps:
+  - No runner enforcement demonstrated
+  operatorAcknowledgement: EXAMPLE acknowledgement, not live authorization
+exceptions: []
+returnTo: architect

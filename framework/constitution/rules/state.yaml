@@ -1,0 +1,80 @@
+- id: STA-001
+  title: State ownership is explicit
+  level: MUST
+  scope:
+  - block
+  - concept-pack
+  statement: State ownership is explicit.
+  rationale: Prevent ambiguous ownership and unauthorized mutation.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: STA-001-VIOLATION
+  waiver:
+    allowed: false
+- id: STA-002
+  title: A block directly mutates state owned by another block
+  level: MUST NOT
+  scope:
+  - block
+  - concept-pack
+  statement: A block directly mutates state owned by another block.
+  rationale: Prevent ambiguous ownership and unauthorized mutation.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: STA-002-VIOLATION
+  waiver:
+    allowed: false
+- id: STA-003
+  title: Persistent state is declared
+  level: MUST
+  scope:
+  - block
+  - concept-pack
+  statement: Persistent state is declared.
+  rationale: Prevent ambiguous ownership and unauthorized mutation.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: STA-003-VIOLATION
+  waiver:
+    allowed: false
+- id: STA-004
+  title: Observed state is distinguished from owned state
+  level: MUST
+  scope:
+  - block
+  - concept-pack
+  statement: Observed state is distinguished from owned state.
+  rationale: Prevent ambiguous ownership and unauthorized mutation.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: STA-004-VIOLATION
+  waiver:
+    allowed: false
+- id: STA-005
+  title: Blocks remain stateless unless capability semantics require state
+  level: SHOULD
+  scope:
+  - block
+  - concept-pack
+  statement: Blocks remain stateless unless capability semantics require state.
+  rationale: Prevent ambiguous ownership and unauthorized mutation.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: warning
+    code: STA-005-VIOLATION
+  waiver:
+    allowed: false

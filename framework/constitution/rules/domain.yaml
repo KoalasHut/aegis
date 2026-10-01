@@ -1,0 +1,148 @@
+- id: DOM-001
+  title: Domain terminology follows the owning bounded context's ubiquitous language
+  level: MUST
+  scope:
+  - block
+  - concept-pack
+  statement: Domain terminology follows the owning bounded context's ubiquitous language.
+  rationale: Preserve domain meaning and aggregate ownership.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: DOM-001-VIOLATION
+  waiver:
+    allowed: false
+- id: DOM-002
+  title: A bounded context exposes its internal domain model directly to another bounded
+    context
+  level: MUST NOT
+  scope:
+  - block
+  - concept-pack
+  statement: A bounded context exposes its internal domain model directly to another
+    bounded context.
+  rationale: Preserve domain meaning and aggregate ownership.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: DOM-002-VIOLATION
+  waiver:
+    allowed: false
+- id: DOM-003
+  title: Cross-context communication uses explicit integration contracts
+  level: MUST
+  scope:
+  - block
+  - concept-pack
+  statement: Cross-context communication uses explicit integration contracts.
+  rationale: Preserve domain meaning and aggregate ownership.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: DOM-003-VIOLATION
+  waiver:
+    allowed: false
+- id: DOM-004
+  title: Aggregate invariants are enforced through the aggregate boundary
+  level: MUST
+  scope:
+  - block
+  - concept-pack
+  statement: Aggregate invariants are enforced through the aggregate boundary.
+  rationale: Preserve domain meaning and aggregate ownership.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: DOM-004-VIOLATION
+  waiver:
+    allowed: false
+- id: DOM-005
+  title: External capabilities directly mutate entities internal to another aggregate
+  level: MUST NOT
+  scope:
+  - block
+  - concept-pack
+  statement: External capabilities directly mutate entities internal to another aggregate.
+  rationale: Preserve domain meaning and aggregate ownership.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: DOM-005-VIOLATION
+  waiver:
+    allowed: false
+- id: DOM-006
+  title: Domain concepts without identity are represented as Value Objects
+  level: SHOULD
+  scope:
+  - block
+  - concept-pack
+  statement: Domain concepts without identity are represented as Value Objects.
+  rationale: Preserve domain meaning and aggregate ownership.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: warning
+    code: DOM-006-VIOLATION
+  waiver:
+    allowed: false
+- id: DOM-007
+  title: Domain Events describe business facts that have already happened
+  level: MUST
+  scope:
+  - block
+  - concept-pack
+  statement: Domain Events describe business facts that have already happened.
+  rationale: Preserve domain meaning and aggregate ownership.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: DOM-007-VIOLATION
+  waiver:
+    allowed: false
+- id: DOM-008
+  title: Infrastructure concepts leak into domain contracts
+  level: MUST NOT
+  scope:
+  - block
+  - concept-pack
+  statement: Infrastructure concepts leak into domain contracts.
+  rationale: Preserve domain meaning and aggregate ownership.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: DOM-008-VIOLATION
+  waiver:
+    allowed: false
+- id: DOM-009
+  title: An Anti-Corruption Layer is used when external semantics differ materially
+    from internal domain semantics
+  level: SHOULD
+  scope:
+  - block
+  - concept-pack
+  statement: An Anti-Corruption Layer is used when external semantics differ materially
+    from internal domain semantics.
+  rationale: Preserve domain meaning and aggregate ownership.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: warning
+    code: DOM-009-VIOLATION
+  waiver:
+    allowed: false

@@ -1,0 +1,80 @@
+- id: VER-001
+  title: Public contracts are versioned
+  level: MUST
+  scope:
+  - block
+  - concept-pack
+  statement: Public contracts are versioned.
+  rationale: Preserve consumer expectations during evolution.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: VER-001-VIOLATION
+  waiver:
+    allowed: false
+- id: VER-002
+  title: Breaking contract changes require a new major version
+  level: MUST
+  scope:
+  - block
+  - concept-pack
+  statement: Breaking contract changes require a new major version.
+  rationale: Preserve consumer expectations during evolution.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: VER-002-VIOLATION
+  waiver:
+    allowed: false
+- id: VER-003
+  title: Dependency compatibility is explicit
+  level: MUST
+  scope:
+  - block
+  - concept-pack
+  statement: Dependency compatibility is explicit.
+  rationale: Preserve consumer expectations during evolution.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: VER-003-VIOLATION
+  waiver:
+    allowed: false
+- id: VER-004
+  title: Existing contract semantics silently change
+  level: MUST NOT
+  scope:
+  - block
+  - concept-pack
+  statement: Existing contract semantics silently change.
+  rationale: Preserve consumer expectations during evolution.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: VER-004-VIOLATION
+  waiver:
+    allowed: false
+- id: VER-005
+  title: Additive backwards-compatible evolution is preferred
+  level: SHOULD
+  scope:
+  - block
+  - concept-pack
+  statement: Additive backwards-compatible evolution is preferred.
+  rationale: Preserve consumer expectations during evolution.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: warning
+    code: VER-005-VIOLATION
+  waiver:
+    allowed: false

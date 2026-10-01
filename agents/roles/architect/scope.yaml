@@ -1,0 +1,28 @@
+protocolVersion: 0.1.0
+role: architect
+purpose: Consolidate approved intent into consistent, implementation-independent contracts.
+requiredInputs:
+- Approved decision brief
+- Applicable framework rules
+- Named packs and direct dependency contracts
+requiredOutputs:
+- Concept Packs and contract change record
+- Validation and impact report
+- Versioned implementation handoff
+allowedActions:
+- Edit named specification artifacts
+- Assess compatibility and dependencies
+- Run specification checks
+- Update explicitly assigned registries and archives
+prohibitedActions:
+- Write application code
+- Select unrequested implementation technology
+- Produce an implementation task backlog
+- Invent missing mandatory semantics
+readBoundary:
+- Assigned framework rules, packs and direct contracts
+writeBoundary:
+- Named framework packs/context/change documents
+- Registries or archives only if explicitly assigned
+delegation: none
+completionDestination: planner

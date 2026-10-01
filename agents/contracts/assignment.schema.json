@@ -1,0 +1,287 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "protocolVersion": {
+      "const": "0.1.0"
+    },
+    "assignmentId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "role": {
+      "enum": [
+        "discussion",
+        "architect",
+        "planner",
+        "implementation-planner",
+        "orchestrator",
+        "executor"
+      ]
+    },
+    "objective": {
+      "type": "string",
+      "minLength": 1
+    },
+    "approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "issuer": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "statement": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "issuer",
+        "source",
+        "statement"
+      ]
+    },
+    "inputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "uri": {
+            "type": "string",
+            "minLength": 1
+          },
+          "revision": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "uri",
+          "revision"
+        ]
+      },
+      "minItems": 1
+    },
+    "readPaths": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "writePaths": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "allowedEffects": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "requiredOutputs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "acceptanceCriteria": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "window": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "startsWhen": {
+          "type": "string",
+          "minLength": 1
+        },
+        "endsWhen": {
+          "const": "first terminal handoff"
+        },
+        "resumeRequiresNewAssignment": {
+          "const": true
+        }
+      },
+      "required": [
+        "startsWhen",
+        "endsWhen",
+        "resumeRequiresNewAssignment"
+      ]
+    },
+    "enforcement": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "enum": [
+            "enforced",
+            "supervised-pilot"
+          ]
+        },
+        "verifiedControls": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0
+        },
+        "gaps": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0
+        },
+        "operatorAcknowledgement": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "mode",
+        "verifiedControls",
+        "gaps",
+        "operatorAcknowledgement"
+      ]
+    },
+    "exceptions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "issuer": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1
+          },
+          "scope": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expiresWhen": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "issuer",
+          "source",
+          "scope",
+          "reason",
+          "expiresWhen"
+        ]
+      },
+      "minItems": 0
+    },
+    "returnTo": {
+      "enum": [
+        "discussion",
+        "architect",
+        "planner",
+        "implementation-planner",
+        "orchestrator",
+        "executor",
+        "domain-owner"
+      ]
+    }
+  },
+  "required": [
+    "protocolVersion",
+    "assignmentId",
+    "role",
+    "objective",
+    "approval",
+    "inputs",
+    "readPaths",
+    "writePaths",
+    "allowedEffects",
+    "requiredOutputs",
+    "acceptanceCriteria",
+    "window",
+    "enforcement",
+    "exceptions",
+    "returnTo"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "enforcement": {
+            "properties": {
+              "mode": {
+                "const": "supervised-pilot"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "enforcement": {
+            "properties": {
+              "operatorAcknowledgement": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "enforcement": {
+            "properties": {
+              "mode": {
+                "const": "enforced"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "enforcement": {
+            "properties": {
+              "gaps": {
+                "maxItems": 0
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

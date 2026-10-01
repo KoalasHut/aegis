@@ -1,0 +1,160 @@
+- id: DES-001
+  title: Variable behavior behind a stable contract uses Strategy
+  level: SHOULD
+  scope:
+  - block
+  - concept-pack
+  statement: Variable behavior behind a stable contract uses Strategy.
+  rationale: Select patterns by conditions and keep dependencies explicit.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: warning
+    code: DES-001-VIOLATION
+  waiver:
+    allowed: false
+- id: DES-002
+  title: External technologies implementing internal ports use Adapter
+  level: MUST
+  scope:
+  - block
+  - concept-pack
+  statement: External technologies implementing internal ports use Adapter.
+  rationale: Select patterns by conditions and keep dependencies explicit.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: DES-002-VIOLATION
+  waiver:
+    allowed: false
+- id: DES-003
+  title: Complex or variable implementation creation is isolated through Factory
+  level: SHOULD
+  scope:
+  - block
+  - concept-pack
+  statement: Complex or variable implementation creation is isolated through Factory.
+  rationale: Select patterns by conditions and keep dependencies explicit.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: warning
+    code: DES-003-VIOLATION
+  waiver:
+    allowed: false
+- id: DES-004
+  title: Cross-cutting behavior around an existing capability uses Decorator
+  level: SHOULD
+  scope:
+  - block
+  - concept-pack
+  statement: Cross-cutting behavior around an existing capability uses Decorator.
+  rationale: Select patterns by conditions and keep dependencies explicit.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: warning
+    code: DES-004-VIOLATION
+  waiver:
+    allowed: false
+- id: DES-005
+  title: Hierarchical composition of equivalent capability types uses Composite
+  level: SHOULD
+  scope:
+  - block
+  - concept-pack
+  statement: Hierarchical composition of equivalent capability types uses Composite.
+  rationale: Select patterns by conditions and keep dependencies explicit.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: warning
+    code: DES-005-VIOLATION
+  waiver:
+    allowed: false
+- id: DES-006
+  title: Meaningful behavioral transitions are modeled explicitly using State
+  level: SHOULD
+  scope:
+  - block
+  - concept-pack
+  statement: Meaningful behavioral transitions are modeled explicitly using State.
+  rationale: Select patterns by conditions and keep dependencies explicit.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: warning
+    code: DES-006-VIOLATION
+  waiver:
+    allowed: false
+- id: DES-007
+  title: State-changing business intent is modeled as a Command
+  level: SHOULD
+  scope:
+  - block
+  - concept-pack
+  statement: State-changing business intent is modeled as a Command.
+  rationale: Select patterns by conditions and keep dependencies explicit.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: warning
+    code: DES-007-VIOLATION
+  waiver:
+    allowed: false
+- id: DES-008
+  title: Service Locator hides dependencies
+  level: MUST NOT
+  scope:
+  - block
+  - concept-pack
+  statement: Service Locator hides dependencies.
+  rationale: Select patterns by conditions and keep dependencies explicit.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: DES-008-VIOLATION
+  waiver:
+    allowed: false
+- id: DES-009
+  title: Inheritance is used where composition provides equivalent behavior
+  level: SHOULD NOT
+  scope:
+  - block
+  - concept-pack
+  statement: Inheritance is used where composition provides equivalent behavior.
+  rationale: Select patterns by conditions and keep dependencies explicit.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: warning
+    code: DES-009-VIOLATION
+  waiver:
+    allowed: false
+- id: DES-010
+  title: Singleton is used as undeclared global mutable application state
+  level: MUST NOT
+  scope:
+  - block
+  - concept-pack
+  statement: Singleton is used as undeclared global mutable application state.
+  rationale: Select patterns by conditions and keep dependencies explicit.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: DES-010-VIOLATION
+  waiver:
+    allowed: false

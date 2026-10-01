@@ -1,0 +1,98 @@
+- id: CORE-001
+  title: Every block represents one meaningful capability or concept
+  level: MUST
+  scope:
+  - block
+  - concept-pack
+  statement: Every block represents one meaningful capability or concept.
+  rationale: Keep capability boundaries understandable and authoritative.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: CORE-001-VIOLATION
+  waiver:
+    allowed: false
+- id: CORE-002
+  title: Every block has exactly one owning bounded context
+  level: MUST
+  scope:
+  - block
+  - concept-pack
+  statement: Every block has exactly one owning bounded context.
+  rationale: Keep capability boundaries understandable and authoritative.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: CORE-002-VIOLATION
+  waiver:
+    allowed: false
+- id: CORE-003
+  title: Every block is independently understandable from its Concept Pack
+  level: MUST
+  scope:
+  - block
+  - concept-pack
+  statement: Every block is independently understandable from its Concept Pack.
+  rationale: Keep capability boundaries understandable and authoritative.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: CORE-003-VIOLATION
+  waiver:
+    allowed: false
+- id: CORE-004
+  title: Implementation details do not appear in public contracts unless intrinsically
+    part of the capability
+  level: MUST
+  scope:
+  - block
+  - concept-pack
+  statement: Implementation details do not appear in public contracts unless intrinsically
+    part of the capability.
+  rationale: Keep capability boundaries understandable and authoritative.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: CORE-004-VIOLATION
+  waiver:
+    allowed: false
+- id: CORE-005
+  title: The specification is authoritative over implementation
+  level: MUST
+  scope:
+  - block
+  - concept-pack
+  statement: The specification is authoritative over implementation.
+  rationale: Keep capability boundaries understandable and authoritative.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: CORE-005-VIOLATION
+  waiver:
+    allowed: false
+- id: CORE-006
+  title: A block should be replaceable without requiring consumer modification
+  level: SHOULD
+  scope:
+  - block
+  - concept-pack
+  statement: A block should be replaceable without requiring consumer modification.
+  rationale: Keep capability boundaries understandable and authoritative.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: warning
+    code: CORE-006-VIOLATION
+  waiver:
+    allowed: false

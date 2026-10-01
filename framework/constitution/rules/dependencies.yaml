@@ -1,0 +1,96 @@
+- id: DEP-001
+  title: Every direct dependency is declared
+  level: MUST
+  scope:
+  - block
+  - concept-pack
+  statement: Every direct dependency is declared.
+  rationale: Make dependencies explicit and replacement safe.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: DEP-001-VIOLATION
+  waiver:
+    allowed: false
+- id: DEP-002
+  title: Blocks access dependency internals
+  level: MUST NOT
+  scope:
+  - block
+  - concept-pack
+  statement: Blocks access dependency internals.
+  rationale: Make dependencies explicit and replacement safe.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: DEP-002-VIOLATION
+  waiver:
+    allowed: false
+- id: DEP-003
+  title: Dependencies target contracts rather than implementations
+  level: MUST
+  scope:
+  - block
+  - concept-pack
+  statement: Dependencies target contracts rather than implementations.
+  rationale: Make dependencies explicit and replacement safe.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: DEP-003-VIOLATION
+  waiver:
+    allowed: false
+- id: DEP-004
+  title: The synchronous block dependency graph is acyclic
+  level: MUST
+  scope:
+  - block
+  - concept-pack
+  statement: The synchronous block dependency graph is acyclic.
+  rationale: Make dependencies explicit and replacement safe.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: DEP-004-VIOLATION
+  waiver:
+    allowed: false
+- id: DEP-005
+  title: Cross-context dependencies target stable integration contracts
+  level: SHOULD
+  scope:
+  - block
+  - concept-pack
+  statement: Cross-context dependencies target stable integration contracts.
+  rationale: Make dependencies explicit and replacement safe.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: warning
+    code: DEP-005-VIOLATION
+  waiver:
+    allowed: false
+- id: DEP-006
+  title: Optional capabilities remain explicitly optional
+  level: SHOULD
+  scope:
+  - block
+  - concept-pack
+  statement: Optional capabilities remain explicitly optional.
+  rationale: Make dependencies explicit and replacement safe.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: warning
+    code: DEP-006-VIOLATION
+  waiver:
+    allowed: false

@@ -1,0 +1,64 @@
+- id: EVT-001
+  title: Events describe completed facts
+  level: MUST
+  scope:
+  - block
+  - concept-pack
+  statement: Events describe completed facts.
+  rationale: Keep facts independent from producer internals.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: EVT-001-VIOLATION
+  waiver:
+    allowed: false
+- id: EVT-002
+  title: Event contracts are versioned
+  level: MUST
+  scope:
+  - block
+  - concept-pack
+  statement: Event contracts are versioned.
+  rationale: Keep facts independent from producer internals.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: EVT-002-VIOLATION
+  waiver:
+    allowed: false
+- id: EVT-003
+  title: Event consumers depend upon producer internals
+  level: MUST NOT
+  scope:
+  - block
+  - concept-pack
+  statement: Event consumers depend upon producer internals.
+  rationale: Keep facts independent from producer internals.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: EVT-003-VIOLATION
+  waiver:
+    allowed: false
+- id: EVT-004
+  title: Events expose only the information necessary to represent the fact
+  level: SHOULD
+  scope:
+  - block
+  - concept-pack
+  statement: Events expose only the information necessary to represent the fact.
+  rationale: Keep facts independent from producer internals.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: warning
+    code: EVT-004-VIOLATION
+  waiver:
+    allowed: false

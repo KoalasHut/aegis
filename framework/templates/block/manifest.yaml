@@ -1,0 +1,34 @@
+apiVersion: blocks.dev/v1
+kind: Capability
+metadata:
+  id: example.capability
+  version: 1.0.0
+domain:
+  boundedContext: example-context
+classification:
+  type: command
+summary: 'TODO: define business intent'
+contract:
+  input: contracts/inputs.yaml
+  output: contracts/outputs.yaml
+  error: contracts/errors.yaml
+  event: contracts/events.yaml
+  port: contracts/ports.yaml
+imports: []
+exports: []
+state:
+  owns: []
+  observes: []
+  persistent: []
+effects: []
+permissions:
+  required: []
+events:
+  emits: []
+  consumes: []
+patterns:
+  required: []
+  expected: []
+  candidates: []
+compatibility:
+  stability: experimental

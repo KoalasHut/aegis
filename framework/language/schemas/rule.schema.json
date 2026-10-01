@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Rule",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^(CORE|DOM|DES|CON|DEP|STA|EFF|SEC|EVT|CMP|VER|AGT)-\\d{3}$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "level": {
+      "enum": [
+        "MUST",
+        "MUST NOT",
+        "SHOULD",
+        "SHOULD NOT",
+        "MAY"
+      ]
+    },
+    "scope": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "statement": {
+      "type": "string",
+      "minLength": 1
+    },
+    "rationale": {
+      "type": "string",
+      "minLength": 1
+    },
+    "verification": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "structural",
+            "semantic",
+            "review"
+          ]
+        },
+        "automatable": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "type",
+        "automatable"
+      ],
+      "additionalProperties": false
+    },
+    "failure": {
+      "type": "object",
+      "properties": {
+        "severity": {
+          "enum": [
+            "error",
+            "warning",
+            "info"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "severity",
+        "code"
+      ],
+      "additionalProperties": false
+    },
+    "waiver": {
+      "type": "object",
+      "properties": {
+        "allowed": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "allowed"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "id",
+    "title",
+    "level",
+    "scope",
+    "statement",
+    "rationale",
+    "verification",
+    "failure",
+    "waiver"
+  ],
+  "additionalProperties": false
+}

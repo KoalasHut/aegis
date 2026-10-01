@@ -1,0 +1,305 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Manifest",
+  "type": "object",
+  "properties": {
+    "apiVersion": {
+      "const": "blocks.dev/v1"
+    },
+    "kind": {
+      "const": "Capability"
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        }
+      },
+      "required": [
+        "id",
+        "version"
+      ],
+      "additionalProperties": false
+    },
+    "domain": {
+      "type": "object",
+      "properties": {
+        "boundedContext": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "boundedContext"
+      ],
+      "additionalProperties": false
+    },
+    "classification": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "enum": [
+            "resource",
+            "command",
+            "query",
+            "workflow",
+            "subscription",
+            "view",
+            "adapter",
+            "agent",
+            "composite"
+          ]
+        },
+        "execution": {
+          "enum": [
+            "command",
+            "query",
+            "workflow",
+            "subscription"
+          ]
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "contract": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "imports": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "contract": {
+            "type": "string",
+            "minLength": 1
+          },
+          "version": {
+            "type": "string",
+            "pattern": "^(\\d+\\.\\d+\\.\\d+|\\^\\d+)$"
+          },
+          "mode": {
+            "enum": [
+              "synchronous",
+              "asynchronous"
+            ]
+          },
+          "optional": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "contract",
+          "version",
+          "mode",
+          "optional"
+        ],
+        "additionalProperties": false
+      },
+      "uniqueItems": true
+    },
+    "exports": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "state": {
+      "type": "object",
+      "properties": {
+        "owns": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "observes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "persistent": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "owns",
+        "observes",
+        "persistent"
+      ],
+      "additionalProperties": false
+    },
+    "effects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "minLength": 1
+          },
+          "target": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "kind",
+          "target"
+        ],
+        "additionalProperties": false
+      },
+      "uniqueItems": true
+    },
+    "permissions": {
+      "type": "object",
+      "properties": {
+        "required": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "required"
+      ],
+      "additionalProperties": false
+    },
+    "events": {
+      "type": "object",
+      "properties": {
+        "emits": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "consumes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "emits",
+        "consumes"
+      ],
+      "additionalProperties": false
+    },
+    "patterns": {
+      "type": "object",
+      "properties": {
+        "required": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "expected": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "candidates": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "required",
+        "expected",
+        "candidates"
+      ],
+      "additionalProperties": false
+    },
+    "compatibility": {
+      "type": "object",
+      "properties": {
+        "stability": {
+          "enum": [
+            "experimental",
+            "stable",
+            "deprecated"
+          ]
+        }
+      },
+      "required": [
+        "stability"
+      ],
+      "additionalProperties": false
+    },
+    "unresolved": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "required": [
+    "apiVersion",
+    "kind",
+    "metadata",
+    "domain",
+    "classification",
+    "summary",
+    "contract",
+    "imports",
+    "exports",
+    "state",
+    "effects",
+    "permissions",
+    "events",
+    "patterns",
+    "compatibility"
+  ],
+  "additionalProperties": false
+}

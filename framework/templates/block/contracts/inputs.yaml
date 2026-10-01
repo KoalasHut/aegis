@@ -1,0 +1,11 @@
+id: example.capability.input
+version: 0.1.0
+kind: input
+summary: 'TODO: replace or omit if irrelevant'
+types:
+  ExampleMeaning: 'TODO: define domain meaning'
+input: {}
+output: {}
+errors: []
+semantics:
+- 'TODO: define observable behavior'

@@ -1,0 +1,217 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "protocolVersion": {
+      "const": "0.1.0"
+    },
+    "assignmentId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "role": {
+      "enum": [
+        "discussion",
+        "architect",
+        "planner",
+        "implementation-planner",
+        "orchestrator",
+        "executor"
+      ]
+    },
+    "outcome": {
+      "enum": [
+        "COMPLETED",
+        "BLOCKED",
+        "REJECTED",
+        "ESCALATED"
+      ]
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "inputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "uri": {
+            "type": "string",
+            "minLength": 1
+          },
+          "revision": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "uri",
+          "revision"
+        ]
+      },
+      "minItems": 1
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "uri": {
+            "type": "string",
+            "minLength": 1
+          },
+          "revision": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "uri",
+          "revision"
+        ]
+      },
+      "minItems": 0
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "claim": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reference": {
+            "type": "string",
+            "minLength": 1
+          },
+          "result": {
+            "enum": [
+              "passed",
+              "failed",
+              "not-run",
+              "reviewed"
+            ]
+          }
+        },
+        "required": [
+          "claim",
+          "reference",
+          "result"
+        ]
+      },
+      "minItems": 0
+    },
+    "issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "owner": {
+            "enum": [
+              "discussion",
+              "architect",
+              "planner",
+              "implementation-planner",
+              "orchestrator",
+              "executor",
+              "domain-owner"
+            ]
+          },
+          "neededAction": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "code",
+          "description",
+          "owner",
+          "neededAction"
+        ]
+      },
+      "minItems": 0
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "nextResponsibility": {
+      "enum": [
+        "discussion",
+        "architect",
+        "planner",
+        "implementation-planner",
+        "orchestrator",
+        "executor",
+        "domain-owner"
+      ]
+    },
+    "windowClosed": {
+      "const": true
+    }
+  },
+  "required": [
+    "protocolVersion",
+    "assignmentId",
+    "role",
+    "outcome",
+    "summary",
+    "inputs",
+    "artifacts",
+    "evidence",
+    "issues",
+    "limitations",
+    "nextResponsibility",
+    "windowClosed"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "outcome": {
+            "const": "COMPLETED"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "artifacts": {
+            "minItems": 1
+          },
+          "evidence": {
+            "minItems": 1
+          },
+          "issues": {
+            "maxItems": 0
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "issues": {
+            "minItems": 1
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+protocolVersion: 0.1.0
+role: executor
+purpose: Implement one bounded assignment against exact approved requirements.
+requiredInputs:
+- Admitted executor task
+- Pinned contracts and specific plan
+- Dependencies and exclusive file ownership
+requiredOutputs:
+- Assigned code changes
+- Task-level verification evidence
+allowedActions:
+- Edit explicitly assigned implementation/test files
+- Run assigned checks
+- Report technical findings and blockers
+prohibitedActions:
+- Edit contracts, generic backlog or own controls
+- Take neighboring tasks without assignment
+- Choose missing domain semantics
+- Spawn other agents
+- Claim integrated conformance from unit checks alone
+readBoundary:
+- Assigned task, contracts, dependencies and implementation files
+writeBoundary:
+- Only exact task-owned implementation/test/output files
+delegation: none
+completionDestination: orchestrator

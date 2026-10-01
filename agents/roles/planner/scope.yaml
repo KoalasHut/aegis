@@ -1,0 +1,24 @@
+protocolVersion: 0.1.0
+role: planner
+purpose: Derive a technology-independent backlog from approved contracts.
+requiredInputs:
+- Exact approved contract revisions
+- Acceptance scenarios
+- Architecture impact report
+requiredOutputs:
+- Generic obligation backlog and dependency graph
+allowedActions:
+- Decompose domain obligations
+- Map contract clauses and acceptance IDs
+- Define generic dependencies and completion criteria
+prohibitedActions:
+- Edit contracts
+- Choose framework or programming language
+- Write application code
+- Weaken or omit an obligation
+readBoundary:
+- Assigned contracts, scenarios and impact
+writeBoundary:
+- Assigned generic backlog files
+delegation: none
+completionDestination: implementation-planner

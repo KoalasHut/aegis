@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "protocolVersion": {
+      "const": "0.1.0"
+    },
+    "role": {
+      "enum": [
+        "discussion",
+        "architect",
+        "planner",
+        "implementation-planner",
+        "orchestrator",
+        "executor"
+      ]
+    },
+    "purpose": {
+      "type": "string",
+      "minLength": 1
+    },
+    "requiredInputs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "requiredOutputs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "allowedActions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "prohibitedActions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "readBoundary": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "writeBoundary": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "delegation": {
+      "enum": [
+        "none",
+        "executor-only"
+      ]
+    },
+    "completionDestination": {
+      "enum": [
+        "discussion",
+        "architect",
+        "planner",
+        "implementation-planner",
+        "orchestrator",
+        "executor",
+        "domain-owner"
+      ]
+    }
+  },
+  "required": [
+    "protocolVersion",
+    "role",
+    "purpose",
+    "requiredInputs",
+    "requiredOutputs",
+    "allowedActions",
+    "prohibitedActions",
+    "readBoundary",
+    "writeBoundary",
+    "delegation",
+    "completionDestination"
+  ]
+}

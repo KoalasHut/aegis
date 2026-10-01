@@ -1,0 +1,64 @@
+- id: EFF-001
+  title: All externally observable side effects are declared
+  level: MUST
+  scope:
+  - block
+  - concept-pack
+  statement: All externally observable side effects are declared.
+  rationale: Make externally observable consequences reviewable.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: EFF-001-VIOLATION
+  waiver:
+    allowed: false
+- id: EFF-002
+  title: Capabilities perform undeclared side effects
+  level: MUST NOT
+  scope:
+  - block
+  - concept-pack
+  statement: Capabilities perform undeclared side effects.
+  rationale: Make externally observable consequences reviewable.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: EFF-002-VIOLATION
+  waiver:
+    allowed: false
+- id: EFF-003
+  title: Effects identify their semantic target
+  level: MUST
+  scope:
+  - block
+  - concept-pack
+  statement: Effects identify their semantic target.
+  rationale: Make externally observable consequences reviewable.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: EFF-003-VIOLATION
+  waiver:
+    allowed: false
+- id: EFF-004
+  title: Effects are minimized
+  level: SHOULD
+  scope:
+  - block
+  - concept-pack
+  statement: Effects are minimized.
+  rationale: Make externally observable consequences reviewable.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: warning
+    code: EFF-004-VIOLATION
+  waiver:
+    allowed: false

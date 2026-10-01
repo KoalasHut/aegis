@@ -1,0 +1,25 @@
+protocolVersion: 0.1.0
+role: implementation-planner
+purpose: Translate generic obligations into a plan for one named implementation.
+requiredInputs:
+- Generic obligation backlog
+- Target framework and prototype
+- Existing code and conformance gaps
+requiredOutputs:
+- Specific task graph with obligation mapping, ownership and verification
+allowedActions:
+- Inspect assigned implementation
+- Research target APIs
+- Add necessary technical tasks
+- Plan file ownership, dependencies and verification
+prohibitedActions:
+- Rewrite generic obligations or contracts
+- Implement code or proof-of-concept runtime
+- Silently resolve domain ambiguity
+- Claim feasibility without evidence
+readBoundary:
+- Assigned generic backlog, target code and permitted technical sources
+writeBoundary:
+- Assigned target plan files
+delegation: none
+completionDestination: orchestrator

@@ -1,0 +1,25 @@
+capability:
+  id: example.capability
+domain:
+  affected: []
+state:
+  reads: []
+  writes: []
+dependencies:
+  required: []
+  optional: []
+events:
+  emits: []
+  consumes: []
+permissions:
+  requires: []
+consumers:
+  known: []
+compatibility:
+  breaking: false
+migration:
+  required: false
+risks:
+- 'TODO: assess'
+blastRadius:
+  classification: unknown

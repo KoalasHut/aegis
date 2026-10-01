@@ -1,0 +1,66 @@
+- id: SEC-001
+  title: Required permissions are declared
+  level: MUST
+  scope:
+  - block
+  - concept-pack
+  statement: Required permissions are declared.
+  rationale: Bound capability authority.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: SEC-001-VIOLATION
+  waiver:
+    allowed: false
+- id: SEC-002
+  title: Permissions describe capabilities rather than implementation resources where
+    practical
+  level: MUST
+  scope:
+  - block
+  - concept-pack
+  statement: Permissions describe capabilities rather than implementation resources
+    where practical.
+  rationale: Bound capability authority.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: SEC-002-VIOLATION
+  waiver:
+    allowed: false
+- id: SEC-003
+  title: A block escalates its own permissions
+  level: MUST NOT
+  scope:
+  - block
+  - concept-pack
+  statement: A block escalates its own permissions.
+  rationale: Bound capability authority.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: SEC-003-VIOLATION
+  waiver:
+    allowed: false
+- id: SEC-004
+  title: Sensitive effects have explicit authorization boundaries
+  level: MUST
+  scope:
+  - block
+  - concept-pack
+  statement: Sensitive effects have explicit authorization boundaries.
+  rationale: Bound capability authority.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: SEC-004-VIOLATION
+  waiver:
+    allowed: false

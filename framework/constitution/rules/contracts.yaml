@@ -1,0 +1,129 @@
+- id: CON-001
+  title: All externally observable behavior has an explicit contract
+  level: MUST
+  scope:
+  - block
+  - concept-pack
+  statement: All externally observable behavior has an explicit contract.
+  rationale: Make observable behavior independently consumable.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: CON-001-VIOLATION
+  waiver:
+    allowed: false
+- id: CON-002
+  title: Inputs and outputs have semantic types
+  level: MUST
+  scope:
+  - block
+  - concept-pack
+  statement: Inputs and outputs have semantic types.
+  rationale: Make observable behavior independently consumable.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: CON-002-VIOLATION
+  waiver:
+    allowed: false
+- id: CON-003
+  title: Failure outcomes are explicitly modeled
+  level: MUST
+  scope:
+  - block
+  - concept-pack
+  statement: Failure outcomes are explicitly modeled.
+  rationale: Make observable behavior independently consumable.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: CON-003-VIOLATION
+  waiver:
+    allowed: false
+- id: CON-004
+  title: Consumers depend upon undocumented output or behavior
+  level: MUST NOT
+  scope:
+  - block
+  - concept-pack
+  statement: Consumers depend upon undocumented output or behavior.
+  rationale: Make observable behavior independently consumable.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: CON-004-VIOLATION
+  waiver:
+    allowed: false
+- id: CON-010
+  title: Every executable capability identifies as Command, Query, Workflow, or Subscription
+  level: MUST
+  scope:
+  - block
+  - concept-pack
+  statement: Every executable capability identifies as Command, Query, Workflow, or
+    Subscription.
+  rationale: Make observable behavior independently consumable.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: CON-010-VIOLATION
+  waiver:
+    allowed: false
+- id: CON-011
+  title: Queries mutate domain state
+  level: MUST NOT
+  scope:
+  - block
+  - concept-pack
+  statement: Queries mutate domain state.
+  rationale: Make observable behavior independently consumable.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: CON-011-VIOLATION
+  waiver:
+    allowed: false
+- id: CON-012
+  title: Commands express business intent rather than persistence operations
+  level: MUST
+  scope:
+  - block
+  - concept-pack
+  statement: Commands express business intent rather than persistence operations.
+  rationale: Make observable behavior independently consumable.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: CON-012-VIOLATION
+  waiver:
+    allowed: false
+- id: CON-013
+  title: Contracts define typed success and failure outcomes
+  level: MUST
+  scope:
+  - block
+  - concept-pack
+  statement: Contracts define typed success and failure outcomes.
+  rationale: Make observable behavior independently consumable.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: CON-013-VIOLATION
+  waiver:
+    allowed: false

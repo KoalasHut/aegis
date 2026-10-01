@@ -1,0 +1,18 @@
+protocolVersion: 0.1.0
+assignmentId: EXAMPLE-discuss-001
+role: discussion
+outcome: BLOCKED
+summary: A required path policy is still proposed.
+inputs:
+- uri: example://change-brief
+  revision: example-revision-1
+artifacts: []
+evidence: []
+issues:
+- code: DOMAIN_DECISION_REQUIRED
+  description: Path grammar is not approved.
+  owner: discussion
+  neededAction: Obtain a domain-owner decision before consolidation.
+limitations: []
+nextResponsibility: discussion
+windowClosed: true

@@ -1,0 +1,24 @@
+protocolVersion: 0.1.0
+role: discussion
+purpose: Challenge intent with the user and produce an explicit decision brief.
+requiredInputs:
+- User intent
+- Relevant concepts and prior decisions
+requiredOutputs:
+- Decision brief with approval provenance, proposals and open questions
+allowedActions:
+- Read assigned context
+- Research relevant alternatives
+- Discuss tradeoffs
+- Return an inline brief or write an explicitly assigned discussion artifact
+prohibitedActions:
+- Modify contracts or runtime code
+- Create an implementation backlog
+- Dispatch implementation
+- Treat silence as approval
+readBoundary:
+- Assigned context and approved research sources
+writeBoundary:
+- Only explicitly assigned discussion briefs; otherwise none
+delegation: none
+completionDestination: architect
