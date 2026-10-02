@@ -43,26 +43,29 @@ jobs:
         run: python3 -m unittest discover -s tests -v
 
       - name: Validate artifacts
-        # Preserve diagnostics even when the test step fails; do not mask failure.
+        # Write outside the repository so the validator cannot scan its own report.
         if: ${{ !cancelled() && steps.dependencies.outcome == 'success' }}
+        env:
+          AEGIS_REPORT_DIR: ${{ runner.temp }}/aegis-validation
         run: |
-          mkdir -p validation-results
-          python3 scripts/validate.py --json --strict > validation-results/validation.json
+          mkdir -p "${AEGIS_REPORT_DIR}"
+          python3 scripts/validate.py --json --strict > "${AEGIS_REPORT_DIR}/validation.json"
 
       - name: Validate approved rules against the PR base
         if: ${{ !cancelled() && steps.dependencies.outcome == 'success' && github.event_name == 'pull_request' }}
         env:
           AEGIS_BASE_REF: ${{ github.base_ref }}
+          AEGIS_REPORT_DIR: ${{ runner.temp }}/aegis-validation
         run: |
           # Treat the event's branch name as data, never as shell source.
           git show-ref --verify -- "refs/remotes/origin/${AEGIS_BASE_REF}"
-          python3 scripts/validate.py --base "origin/${AEGIS_BASE_REF}" --json --strict > validation-results/base-validation.json
+          python3 scripts/validate.py --base "origin/${AEGIS_BASE_REF}" --json --strict > "${AEGIS_REPORT_DIR}/base-validation.json"
 
       - name: Upload validator results
         if: ${{ !cancelled() && steps.dependencies.outcome == 'success' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: validation-python-${{ matrix.python-version }}
-          path: validation-results/*.json
+          path: ${{ runner.temp }}/aegis-validation/*.json
           if-no-files-found: error
           retention-days: 14
