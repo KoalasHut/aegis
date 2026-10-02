@@ -25,6 +25,7 @@ distinction between documented instructions and verified host enforcement.
 | `framework/` | Reusable specification language, rules, patterns, and templates |
 | `scripts/init.py` | Dependency-free project initialization |
 | `scripts/validate.py` | Structural, reference and coverage validation of core artifacts |
+| `.github/workflows/validate.yml` | Push/PR artifact gate and Python compatibility matrix |
 | `requirements-dev.txt` | Validator and development test dependencies |
 | `docs/PROJECT_README.template.md` | Source for the generated project README |
 | `tests/` | Initializer safety and validator fixtures/checks |
@@ -55,11 +56,55 @@ Validation is a structural/reference gate, not a scenario runner or approval
 authenticator. Do not claim conformance, host enforcement, automated lanes or
 provisional-rule integration from a passing validator. Those runtime/workflow
 features and legacy extraction remain deferred in 0.2.0.
+The 0.2.1 hardening release preserves these limits; its `--base` and `--strict`
+checks strengthen artifact review without executing domain scenarios.
+
+Keep project and example validation scopes isolated. The authoritative decision
+logs are `framework/decisions.yaml`, `agents/decisions.yaml`, and each example's
+own `decisions.yaml`; Markdown logs are narrative only. Preserve statuses and
+actual approval provenance. A copied maintenance decision is not a product
+approval, and a test fixture must not resolve project references.
+
+When changing an approved domain rule, retain the old ID, mark the old rule
+deprecated and put `supersedes: <old-id>` on the new rule. Run the validator with
+`--base` against the reviewed baseline. Review warning-only title/rationale
+clarifications as well; CI's strict mode makes warnings fail. Install all declared
+format dependencies, and retain regressions for unavailable format checkers.
 
 Tests use disposable copies and leave the template uninitialized. For documentation
 changes, check relative links and ensure the commands match the initializer.
 For initializer changes, verify dry runs, repeated runs, collisions, and generated
 content in a disposable copy. Preserve existing project data on failure.
+
+## Continuous validation
+
+The [workflow](.github/workflows/validate.yml) runs on every push and pull request
+with Python 3.9 and the latest stable 3.x. Each job installs `requirements-dev.txt`,
+runs the full tests, saves validator JSON, and uploads it as
+`validation-python-3.9` or `validation-python-3.x`. Reports are retained for 14 days.
+Validation and upload are attempted after a test/validator failure when dependency
+installation succeeded; earlier setup failures may leave no report.
+
+On PRs, checkout fetches all branches/history and validation uses
+`--base origin/<base-branch>`. It compares the checked-out PR merge tree with that
+base, including approved-rule changes and removed IDs. Locally, fetch the intended
+base before running, for example `python3 scripts/validate.py --base origin/main`;
+replace `main` with the real base. This is a history-aware artifact check, not a
+lane selector or behavioral conformance run. CI adds `--strict` to both validator
+runs, making errors and warnings fail the check. Ordinary local validation still
+fails on errors only; add `--strict` locally to reproduce CI's warning policy.
+
+Maintain the minimal `contents: read` permission, disabled credential persistence,
+full-commit action pins and quoted environment-variable handling of branch names.
+Do not interpolate event-provided strings into shell source or switch to
+`pull_request_target` to execute untrusted PR code. Review action-pin updates
+against the official action repositories and rerun workflow checks.
+
+Projects inherit the workflow file, not repository protection settings. Follow
+[the owner setup steps](docs/GETTING_STARTED.md#continuous-validation-on-github)
+to require both matrix checks. Preserve stable job names so required checks keep
+matching. These files do not change remote settings, and local validation does
+not establish that a hosted Actions run succeeded.
 
 ## Version changes
 

@@ -1,0 +1,112 @@
+- id: D-AEGIS-001
+  title: "OD-1 — Domain rule identity"
+  question: "How should business rules be named?"
+  decision: "Use domain rules with BR-<CONTEXT>-NNN IDs, separate from constitution prefixes."
+  status: approved
+  approver: Diego
+  date: "2026-10-01"
+  source: "Aegis maintenance conversation, 2026-10-01; Diego approved OD-1 through OD-7; retained by aegis-020-workflow/aegis-020-orchestrator. Proposal SHA256 9f0412c5c4c2048e7454fceba3ee31b5c0b31d426268f036600b7a835cd5da29. Transcribed under aegis-021-release."
+  affects:
+    - framework/language/domain-rule-spec.md
+    - framework/registry/rules.yaml
+- id: D-AEGIS-002
+  title: "OD-2 — Themed rule files"
+  question: "How should rules be grouped?"
+  decision: "Use themed YAML lists with stable, unique rule IDs. File boundaries do not define identity."
+  status: approved
+  approver: Diego
+  date: "2026-10-01"
+  source: "Aegis maintenance conversation, 2026-10-01; Diego approved OD-1 through OD-7; retained by aegis-020-workflow/aegis-020-orchestrator. Proposal SHA256 9f0412c5c4c2048e7454fceba3ee31b5c0b31d426268f036600b7a835cd5da29. Transcribed under aegis-021-release."
+  affects:
+    - framework/templates/context/rules/
+    - framework/language/schemas/domain-rule.schema.json
+- id: D-AEGIS-003
+  title: "OD-3 — Structured scenarios"
+  question: "Which scenario format is authoritative?"
+  decision: "Use structured YAML scenarios owned by contexts and reviewed with rules and glossary. Behavioral execution remains deferred."
+  status: approved
+  approver: Diego
+  date: "2026-10-01"
+  source: "Aegis maintenance conversation, 2026-10-01; Diego approved OD-1 through OD-7; retained by aegis-020-workflow/aegis-020-orchestrator. Proposal SHA256 9f0412c5c4c2048e7454fceba3ee31b5c0b31d426268f036600b7a835cd5da29. Transcribed under aegis-021-release."
+  affects:
+    - framework/language/scenario-spec.md
+    - framework/templates/context/scenarios/
+- id: D-AEGIS-004
+  title: "OD-4 — Python tooling"
+  question: "Which runtime should validation and a future runner use?"
+  decision: "Use Python for validation and the future conformance runner. The initializer remains standard-library-only; no runner is delivered in 0.2.1."
+  status: approved
+  approver: Diego
+  date: "2026-10-01"
+  source: "Aegis maintenance conversation, 2026-10-01; Diego approved OD-1 through OD-7; retained by aegis-020-workflow/aegis-020-orchestrator. Proposal SHA256 9f0412c5c4c2048e7454fceba3ee31b5c0b31d426268f036600b7a835cd5da29. Transcribed under aegis-021-release."
+  affects:
+    - scripts/validate.py
+    - requirements-dev.txt
+- id: D-AEGIS-005
+  title: "OD-5 — Driver transport direction"
+  question: "How should a future reference driver communicate?"
+  decision: "Use JSON Lines over standard input/output as the future reference transport. Driver, runner and matrix remain deferred."
+  status: approved
+  approver: Diego
+  date: "2026-10-01"
+  source: "Aegis maintenance conversation, 2026-10-01; Diego approved OD-1 through OD-7; retained by aegis-020-workflow/aegis-020-orchestrator. Proposal SHA256 9f0412c5c4c2048e7454fceba3ee31b5c0b31d426268f036600b7a835cd5da29. Transcribed under aegis-021-release."
+  affects:
+    - conformance/
+- id: D-AEGIS-008
+  title: "OD-8 — Structured decision logs"
+  question: "Which decision representation is authoritative?"
+  decision: "Use structured decisions.yaml logs; Markdown is optional narrative. Only approved same-scope YAML decisions with provenance can support approved rules."
+  status: approved
+  approver: Diego
+  date: "2026-10-02"
+  source: "Aegis maintenance conversation, 2026-10-02; Diego approved OD-8 through OD-13 and ordered given.steps with legacy 0.2.x compatibility; retained by aegis-021-orchestrator and aegis-021-release. Plan SHA256 de054ce52e20241f5de34d579112904e3d92ea7e0fa9a9ccde536709a8057af2."
+  affects:
+    - framework/decisions.yaml
+    - agents/decisions.yaml
+    - framework/language/schemas/decision.schema.json
+- id: D-AEGIS-009
+  title: "OD-9 — Supersession direction"
+  question: "Which record points to the replaced record?"
+  decision: "The new rule carries supersedes with the old ID. The old rule becomes deprecated and is otherwise retained. Decisions use the same direction with old status superseded; supersededBy is not stored."
+  status: approved
+  approver: Diego
+  date: "2026-10-02"
+  source: "Aegis maintenance conversation, 2026-10-02; Diego approved OD-8 through OD-13 and ordered given.steps with legacy 0.2.x compatibility; retained by aegis-021-orchestrator and aegis-021-release. Plan SHA256 de054ce52e20241f5de34d579112904e3d92ea7e0fa9a9ccde536709a8057af2."
+  affects:
+    - framework/language/domain-rule-spec.md
+    - framework/language/schemas/domain-rule.schema.json
+    - scripts/validate.py
+- id: D-AEGIS-010
+  title: "OD-10 — Isolated validation scopes"
+  question: "Can project and example artifacts resolve one another?"
+  decision: "Validate one project scope and one isolated closed scope per example. Tests and templates do not satisfy project references; tests are considered only when explicitly used as a validation root."
+  status: approved
+  approver: Diego
+  date: "2026-10-02"
+  source: "Aegis maintenance conversation, 2026-10-02; Diego approved OD-8 through OD-13 and ordered given.steps with legacy 0.2.x compatibility; retained by aegis-021-orchestrator and aegis-021-release. Plan SHA256 de054ce52e20241f5de34d579112904e3d92ea7e0fa9a9ccde536709a8057af2."
+  affects:
+    - scripts/validate.py
+    - framework/examples/
+- id: D-AEGIS-011
+  title: "OD-11 — Neutrality phrases"
+  question: "How should neutrality vocabulary avoid ambiguous language?"
+  decision: "Match configurable phrases case-insensitively, replace ambiguous single words and allow a reviewed per-context neutrality-allow.txt. Scan glossary and relevant contract prose as well as rules and scenarios."
+  status: approved
+  approver: Diego
+  date: "2026-10-02"
+  source: "Aegis maintenance conversation, 2026-10-02; Diego approved OD-8 through OD-13 and ordered given.steps with legacy 0.2.x compatibility; retained by aegis-021-orchestrator and aegis-021-release. Plan SHA256 de054ce52e20241f5de34d579112904e3d92ea7e0fa9a9ccde536709a8057af2."
+  affects:
+    - framework/language/neutrality-words.txt
+    - scripts/validate.py
+- id: D-AEGIS-012
+  title: "OD-12 — Scenario matching and setup"
+  question: "What scenario semantics must future execution preserve?"
+  decision: "Objects match partially, arrays exactly by default and scalars without coercion. Explicit matchers opt out. Use canonical ordered given.steps for commands and clock advances; retain legacy given.commands during 0.2.x migration. Captures, intentional setup errors and when-only event assertions are specified now; execution remains deferred."
+  status: approved
+  approver: Diego
+  date: "2026-10-02"
+  source: "Aegis maintenance conversation, 2026-10-02; Diego approved OD-8 through OD-13 and ordered given.steps with legacy 0.2.x compatibility; retained by aegis-021-orchestrator and aegis-021-release. Plan SHA256 de054ce52e20241f5de34d579112904e3d92ea7e0fa9a9ccde536709a8057af2."
+  affects:
+    - framework/language/scenario-spec.md
+    - framework/language/schemas/scenario.schema.json
+    - framework/examples/tiny-todo/

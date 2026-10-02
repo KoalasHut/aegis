@@ -1,0 +1,15 @@
+id: tasks.list
+version: 1.0.0
+kind: query
+summary: List a person's tasks in position order.
+types:
+  Task: A task with identity, title, position, completion state, and urgency.
+input: {}
+output:
+  items:
+    type: Task[]
+    required: true
+    description: Tasks in position order.
+errors: []
+semantics:
+  - Listing tasks does not change a task.

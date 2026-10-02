@@ -1,0 +1,67 @@
+- id: BR-TODO-001
+  title: Reopening preserves position
+  statement: A task keeps its position when it is completed and then reopened.
+  type: invariant
+  status: approved
+  owner: Task-list owner
+  decision: D-TODO-001
+  rationale: Completing work must not unexpectedly reorder a person's list.
+  verification: automated
+- id: BR-TODO-002
+  title: Unfinished tasks become overdue after their due time
+  statement: An unfinished task becomes overdue after its due time has passed.
+  type: policy
+  status: approved
+  owner: Task-list owner
+  decision: D-TODO-002
+  rationale: People need a consistent meaning for overdue work.
+  effectiveFrom: '2026-10-02'
+  verification: automated
+- id: BR-TODO-003
+  title: Task urgency is derived from due time and completion
+  statement: A task is overdue when it is unfinished and its due time is before the current time; otherwise it is scheduled.
+  type: calculation
+  status: approved
+  owner: Task-list owner
+  decision: D-TODO-003
+  rationale: Urgency should be derived from observable task facts.
+  decisionTable:
+    inputs: [completionState, dueTime, currentTime]
+    outputs: [urgency]
+    rows:
+    - when: { completionState: unfinished, dueTime: before-current-time }
+      then: { urgency: overdue }
+    - when: { completionState: finished-or-not-yet-due }
+      then: { urgency: scheduled }
+  verification: automated
+- id: BR-TODO-004
+  title: Task records are retained for the required period
+  statement: Task records are retained for the period required by the applicable retention authority.
+  type: constraint
+  status: approved
+  owner: Records owner
+  decision: D-TODO-004
+  rationale: The retention period is imposed outside the task list.
+  source:
+    kind: law
+    reference: Applicable task-record retention authority
+    locator: Task-record retention section
+  verification: review
+- id: BR-TODO-005
+  title: Clearing tasks requires confirmation
+  statement: A person receives confirmation before all tasks are cleared.
+  type: quality
+  status: approved
+  owner: Task-list owner
+  decision: D-TODO-005
+  rationale: A person needs an opportunity to stop an irreversible list change.
+  verification: manual
+- id: BR-TODO-006
+  title: Recorded tasks have titles
+  statement: A recorded task has a nonempty title.
+  type: invariant
+  status: approved
+  owner: Task-list owner
+  decision: D-TODO-006
+  rationale: A task without a title cannot communicate intended work.
+  verification: automated

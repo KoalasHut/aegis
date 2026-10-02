@@ -1,5 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aegis.dev/framework/language/schemas/domain-rule.schema.json",
   "title": "Themed domain rule file",
   "description": "A YAML file contains one non-empty themed list of domain rules.",
   "type": "array",
@@ -9,10 +10,7 @@
     "domainRule": {
       "type": "object",
       "properties": {
-        "id": {
-          "type": "string",
-          "pattern": "^BR-[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-[0-9]{3}$"
-        },
+        "id": { "$ref": "common.schema.json#/$defs/ruleId" },
         "title": { "type": "string", "minLength": 1 },
         "statement": { "type": "string", "minLength": 1 },
         "type": {
@@ -22,10 +20,7 @@
           "enum": ["proposed", "approved", "provisional", "extracted", "deprecated"]
         },
         "owner": { "type": "string", "minLength": 1 },
-        "decision": {
-          "type": "string",
-          "pattern": "^D-[A-Z][A-Z0-9-]*-[0-9]{3}$"
-        },
+        "decision": { "$ref": "common.schema.json#/$defs/decisionId" },
         "rationale": { "type": "string", "minLength": 1 },
         "source": {
           "type": "object",
@@ -40,10 +35,7 @@
           "additionalProperties": false
         },
         "effectiveFrom": { "type": "string", "format": "date" },
-        "supersedes": {
-          "type": "string",
-          "pattern": "^BR-[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-[0-9]{3}$"
-        },
+        "supersedes": { "$ref": "common.schema.json#/$defs/ruleId" },
         "decisionTable": {
           "type": "object",
           "properties": {

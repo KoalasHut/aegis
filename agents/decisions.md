@@ -1,5 +1,10 @@
 # Workflow decisions
 
+This file is narrative. [decisions.yaml](decisions.yaml) is authoritative for
+validation; approval status and provenance are not inferred from Markdown.
+OD-6, OD-7 and OD-13 map to D-AEGIS-006, D-AEGIS-007 and D-AEGIS-013 here.
+Other owner defaults are in [the framework YAML log](../framework/decisions.yaml).
+
 Aegis framework maintenance decisions follow. They define the reusable framework;
 they are not approvals for a generated project's product behavior or permission
 to start work. The reusable workflow rules remain in doctrine.md and
@@ -44,3 +49,18 @@ Owner and approval source: the record above. OD-1 through OD-5 are recorded in
 [framework decisions](../framework/decisions.md).
 
 For each future governance decision, retain its identifier, context, decision, alternatives, consequences, issuer, approval source and effective revision. Exceptions additionally need exact scope and expiry. Record decisions only from actual project approvals.
+
+## Aegis 0.2.1 hardening provenance and OD-13
+
+Diego approved OD-8 through OD-13 on 2026-10-02 in the current maintenance
+conversation, captured by `aegis-021-orchestrator` and release assignment
+`aegis-021-release`. The reviewed hardening-plan SHA-256 is
+`de054ce52e20241f5de34d579112904e3d92ea7e0fa9a9ccde536709a8057af2`, against
+starting revision `6e777262db08f497c878106fca0fb1610114d160`.
+
+OD-13 selects GitHub Actions with Python 3.9/latest stable 3.x. CI uses strict
+warnings, PR base comparison and JSON artifacts; owners still configure required
+checks manually. It is an artifact gate, not behavioral conformance evidence.
+Release 0.2.1 hardens the 0.2.0 milestone without changing agent protocol 0.1.0
+or activating workflow lanes. Historical OD-1 through OD-7 approvals are dated
+2026-10-01; their migration to YAML does not create new product approvals.

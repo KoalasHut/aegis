@@ -1,0 +1,25 @@
+id: tasks.add
+version: 1.0.0
+kind: command
+summary: Record a task in a person's ordered list.
+types:
+  Task: A task with identity, title, position, completion state, and urgency.
+input:
+  title:
+    type: string
+    required: true
+    description: The task title.
+  dueAt:
+    type: instant
+    required: false
+    description: The optional due time for the task.
+output:
+  task:
+    type: Task
+    required: true
+    description: The recorded task.
+errors:
+  - code: TITLE_REQUIRED
+    meaning: A task title is required.
+semantics:
+  - Recording a task assigns it the next available position.

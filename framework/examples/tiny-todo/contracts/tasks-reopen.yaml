@@ -1,0 +1,21 @@
+id: tasks.reopen
+version: 1.0.0
+kind: command
+summary: Reopen a completed task.
+types:
+  Task: A task with identity, title, position, completion state, and urgency.
+input:
+  taskId:
+    type: TaskId
+    required: true
+    description: The identity of the task to reopen.
+output:
+  task:
+    type: Task
+    required: true
+    description: The reopened task.
+errors:
+  - code: TASK_UNKNOWN
+    meaning: No task has the requested identity.
+semantics:
+  - Reopening a task restores it without changing its position.

@@ -1,0 +1,54 @@
+- id: D-TODO-001
+  title: Reopening preserves task position
+  question: How should reopening affect a completed task's place in the list?
+  decision: Reopening restores the task to its existing position.
+  status: approved
+  approver: Tiny TODO owner
+  date: '2026-10-02'
+  source: Illustrative owner approval for the Tiny TODO example.
+  affects: [BR-TODO-001, tasks.reopen]
+- id: D-TODO-002
+  title: Overdue tasks remain visible
+  question: When should an unfinished task become overdue?
+  decision: An unfinished task becomes overdue after its due time has passed.
+  status: approved
+  approver: Tiny TODO owner
+  date: '2026-10-02'
+  source: Illustrative owner approval for the Tiny TODO example.
+  affects: [BR-TODO-002, BR-TODO-003]
+- id: D-TODO-003
+  title: Calculate task urgency from time and completion
+  question: How is a task's urgency derived?
+  decision: Derive urgency from due time, current time, and completion state.
+  status: approved
+  approver: Tiny TODO owner
+  date: '2026-10-02'
+  source: Illustrative owner approval for the Tiny TODO example.
+  affects: [BR-TODO-003]
+- id: D-TODO-004
+  title: Retain task records for the required period
+  question: How long must task records remain available?
+  decision: Retain task records for the externally required period.
+  status: approved
+  approver: Tiny TODO owner
+  date: '2026-10-02'
+  source: Illustrative owner approval for the Tiny TODO example.
+  affects: [BR-TODO-004]
+- id: D-TODO-005
+  title: Confirm irreversible clearing
+  question: What must happen before all tasks are removed?
+  decision: A person receives confirmation before clearing all tasks.
+  status: approved
+  approver: Tiny TODO owner
+  date: '2026-10-02'
+  source: Illustrative owner approval for the Tiny TODO example.
+  affects: [BR-TODO-005]
+- id: D-TODO-006
+  title: Task titles are required
+  question: What makes a task record meaningful?
+  decision: A task cannot be recorded without a title.
+  status: approved
+  approver: Tiny TODO owner
+  date: '2026-10-02'
+  source: Illustrative owner approval for the Tiny TODO example.
+  affects: [BR-TODO-006, tasks.add]

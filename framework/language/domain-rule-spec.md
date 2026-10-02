@@ -24,9 +24,10 @@ or `review`.
 temporary, unapproved discovery and must be resolved by the governing workflow.
 `extracted` records observed legacy behavior and requires source evidence.
 `approved` is authoritative and requires the approving `D-...` decision ID.
-`deprecated` preserves a retired ID and may use `supersedes` to point at its
-replacement. Do not change an approved statement in place; create a new rule
-and record the replacement relationship.
+`deprecated` preserves a retired ID. Do not change an approved statement in
+place: deprecate the old rule unchanged, create the replacement, and put
+`supersedes: <old-rule-id>` on the new rule. `supersededBy` is derived from the
+catalog and is never stored.
 
 `source` has a source kind and a durable reference. A `constraint` always
 requires one. An `extracted` rule also requires a locator, such as a file and

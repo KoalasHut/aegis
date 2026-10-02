@@ -1,0 +1,5 @@
+- {id: D-CORE-001, title: Owners, question: Ownership, decision: Record owners, status: approved, approver: Diego, date: '2026-10-01', source: owner approval}
+- {id: D-CORE-002, title: Decisions, question: Governance, decision: Record decisions, status: approved, approver: Diego, date: '2026-10-01', source: owner approval}
+- {id: D-CORE-003, title: Coverage, question: Coverage, decision: Record coverage, status: approved, approver: Diego, date: '2026-10-01', source: owner approval}
+- {id: D-CORE-004, title: Constraints, question: Retention, decision: Retain constraints, status: approved, approver: Diego, date: '2026-10-01', source: owner approval}
+- {id: D-CORE-005, title: Quality, question: Quality, decision: Record quality, status: approved, approver: Diego, date: '2026-10-01', source: owner approval}

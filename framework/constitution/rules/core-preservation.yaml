@@ -7,8 +7,8 @@
   statement: Every business rule enforced by a block is a domain rule with an ID.
   rationale: Preserve business behavior as a context-owned, versioned asset.
   verification:
-    type: structural
-    automatable: true
+    type: review
+    automatable: false
   failure:
     severity: error
     code: CPR-001-VIOLATION
@@ -53,8 +53,8 @@
   statement: The statement of an approved domain rule is edited in place.
   rationale: Preserve the meaning and history that an implementation must conform to.
   verification:
-    type: review
-    automatable: false
+    type: structural
+    automatable: true
   failure:
     severity: error
     code: CPR-004-VIOLATION

@@ -1,21 +1,24 @@
-# Case-insensitive words that need a stack-neutrality review in rules and scenarios.
-# Add project-specific terms here, one literal word or phrase per line.
-sql
-rest
-react
+# Case-insensitive phrases requiring a stack-neutrality review.
+# Add one literal phrase per line. Prefer unambiguous phrases over common words.
+# A context may allow a legitimate domain term in neutrality-allow.txt beside
+# its glossary; each allowlist entry is one case-insensitive literal phrase.
+REST API
+RESTful
+database table
+SQL table
+screen layout
+on-screen
+API call
+API endpoint
+postgres
 kotlin
+mongodb
+react
 swift
 typescript
 python
-database
-table
+graphql
+http
 endpoint
 cache
-http
-api
-graphql
-screen
-button
 widget
-postgres
-mongodb

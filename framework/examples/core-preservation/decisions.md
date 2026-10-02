@@ -1,8 +1,8 @@
-# Illustrative core-preservation decisions
+# Illustrative core-preservation decision narrative
 
-These records make the worked example internally traceable. They are examples
-only: they do not represent a project's approval, authority, or decision
-history.
+`decisions.yaml` is the authoritative structured decision log for this isolated
+example. This Markdown file is explanatory narrative only. Its records do not
+represent a project's approval, authority, or decision history.
 
 ## D-CORE-001 — Identify every approved rule
 

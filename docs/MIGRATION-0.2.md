@@ -1,4 +1,10 @@
-# Migrate an Aegis 0.1.0 project to 0.2.0
+# Migrate an Aegis project through 0.2.x
+
+For an existing 0.2.0 project, begin with [0.2.0 to 0.2.1](#from-020-to-021).
+For 0.1.0, perform the core-preservation steps below and then apply the 0.2.1
+changes. Preserve historical decisions and project identity throughout.
+
+## From 0.1.0 to 0.2.0
 
 The goal is to preserve the project's core across stack changes. This migration
 gives existing business behavior stable rule IDs and structured scenarios; it
@@ -91,3 +97,85 @@ is provided in 0.2.0. Existing mandatory unknowns still block dependent work.
 Schema support for provisional/extracted statuses is not permission to bypass
 that rule. Implementation checks and evidence remain explicitly assigned and
 reviewed; a successful validator run does not mean scenarios passed on any stack.
+
+## From 0.2.0 to 0.2.1
+
+This release changes artifact formats and interpretation. Review the diff in a
+bounded migration assignment; do not rerun initialization as an upgrade. Keep
+`project.json`'s original initialization version and record the adopted release,
+source revisions and review evidence in the project's migration decision.
+
+### Make decision logs authoritative
+
+Create or migrate `framework/decisions.yaml` and `agents/decisions.yaml`; examples
+each use their own `decisions.yaml`. Entries use D-AREA-NNN IDs and the
+[decision schema](../framework/language/schemas/decision.schema.json): title,
+question, decision and status, plus approver, date and source for approved entries.
+Markdown logs may remain as narrative, but no longer satisfy validator references.
+Convert only actual approvals to `approved`; retain proposed/rejected decisions
+with their correct status. Cite a same-scope approved decision from each approved
+domain rule. Example decisions and test fixtures cannot back project rules.
+
+Retain project decision IDs and sources. Do not replace your populated logs with
+the template's maintenance decisions or an empty list. The initializer's special
+replacement of recognized bundled maintenance logs is for a fresh project only;
+it must not be used to erase migration history.
+
+### Correct supersession and ID references
+
+Put `supersedes: <old-id>` on the **new** rule. Mark the old rule `deprecated`
+and otherwise retain it; do not add `supersededBy`. Likewise, a new decision can
+supersede an old decision whose status becomes `superseded`. Targets must exist
+in the same scope; cycles and multiple active replacements are invalid.
+Use the shared ID grammar from
+[common definitions](../framework/language/schemas/common.schema.json) and update
+malformed references with reviewed migration evidence, never by reusing retired IDs.
+
+Fetch an available baseline and run `python3 scripts/validate.py --base <git-ref>`.
+An edited approved statement/type/verification or removed rule ID is an error.
+Title/rationale clarifications require review and produce warnings. Deprecate and
+supersede instead of editing approved behavior in place. Missing Git or baseline
+history is a failed check, not evidence of compatibility.
+
+### Adopt explicit scenario semantics
+
+Use ordered `given.steps` for new scenarios. Move each legacy `given.commands`
+entry into a step in the same order; `given.commands` remains accepted during
+0.2.x migration, but never combine both forms. `given.clock` precedes setup;
+`advanceClock` steps express time passing between commands.
+
+Expected objects match partially, arrays match exactly in length and order, and
+scalars match without coercion. Explicit `$contains`, `$unordered`, `$length`,
+`$absent` and `$any` matchers are the closed alternative grammar; misspelled
+matcher keys fail validation. Review old expected values for these semantics.
+Use `as` to capture setup output and `${name.path}` only after that capture;
+the first output field must exist in its contract. Mark intentional setup errors
+with `expectError`; unexpected setup failure means scenario `error` for the future
+runner. Event assertions cover only `when` events and match exactly unless
+`eventsMatch: contains` is explicit. See the
+[scenario specification](../framework/language/scenario-spec.md) and
+[Tiny TODO example](../framework/examples/tiny-todo/).
+
+Input/output checks cover top-level contract fields, not opaque nested types.
+Automated rules need automated scenario coverage; manual-only scenarios no longer
+satisfy that warning check. Review neutrality phrases across rules, scenarios,
+glossary and contract prose. Use a context's `neutrality-allow.txt` only for
+intentional legitimate domain language, with review rationale.
+
+### Refresh dependencies and CI
+
+Reinstall `requirements-dev.txt` in the project virtual environment, including
+`rfc3339-validator`. Missing format support fails explicitly. Run the tests and
+validator, then reproduce CI with `python3 scripts/validate.py --json --strict`
+and the same command plus `--base <git-ref>`. Normal validation exits nonzero on
+errors; strict mode also fails warnings while retaining JSON findings.
+
+Adopt `.github/workflows/validate.yml` after reviewing existing project workflows.
+It runs push/PR tests on Python 3.9 and latest stable 3.x, validates with strict
+warnings, compares PRs to their fetched base and uploads JSON reports. Configure
+required checks manually using [the CI guide](GETTING_STARTED.md#continuous-validation-on-github).
+Neither adopting the file nor running initialization changes branch protection.
+
+These are artifact and traceability checks. No domain scenario execution,
+behavioral conformance, runner/driver/matrix, workflow lanes, provisional-rule
+continuation or extraction workflow is provided by this migration.

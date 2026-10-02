@@ -46,7 +46,9 @@ provisioning a new machine.
 
 No pip packages are needed merely to initialize. Validation and the full test
 suite require the declared development packages; install them in a virtual
-environment below. No Node.js, Docker or database is required by Aegis.
+environment below. These include RFC3339 format validation; a missing format
+checker is an error, not a skipped check. Git is also required for `--base`
+comparisons. No Node.js, Docker or database is required by Aegis.
 Application dependencies depend on the project's later approved implementation plan.
 
 ## 2. Obtain missing tools
@@ -143,8 +145,30 @@ start empty. A matching repeat initialization is a no-op; conflicting or edited
 outputs block initialization without overwriting them. Never delete existing
 project documents simply to make initialization succeed.
 
+Inspect the authoritative `framework/decisions.yaml` and `agents/decisions.yaml`
+logs separately from generated project documents. First initialization replaces
+only exactly recognized bundled maintenance logs with `[]`; modified or
+unrecognized logs block initialization without being overwritten. New project
+logs contain no product approvals. Project rules must cite approved decisions in
+their own scope. Markdown narrative and isolated examples cannot satisfy them.
+
 Do not run initialization in the Aegis template's own maintenance checkout.
 Commit or push only when included in the user's setup request.
+
+The template includes [a GitHub Actions workflow](.github/workflows/validate.yml)
+for pushes and pull requests. It installs the same development dependencies,
+tests Python 3.9 and the latest stable 3.x, validates artifacts, and uploads JSON
+results. Pull requests additionally compare against their fetched base branch.
+No credentials beyond the read-only workflow token or project secrets are needed.
+Repository/organization Actions policy may require the owner to enable the workflow.
+After an authorized push or PR, inspect the actual Actions results before claiming
+CI passed. A local-only project has no GitHub Actions run.
+
+Follow [continuous validation setup](docs/GETTING_STARTED.md#continuous-validation-on-github)
+to make the checks required manually. Initialization does not configure branch
+protection. CI uses `--strict`, so both errors and warnings fail the artifact gate;
+ordinary local validation fails on errors only. A green
+check is not proof of behavioral conformance or genuine approval provenance.
 
 ## 5. Hand over a ready project
 

@@ -1,10 +1,13 @@
 import json
+import importlib.util
 from pathlib import Path
 import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
+
+import jsonschema
 
 
 SOURCE = Path(__file__).resolve().parents[1]
@@ -16,7 +19,8 @@ class InitializationTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name) / "clone"
         self.root.mkdir()
-        for relative in ("VERSION", "scripts/init.py", "docs/PROJECT_README.template.md", "README.md"):
+        for relative in ("VERSION", "scripts/init.py", "docs/PROJECT_README.template.md", "README.md",
+                         "framework/decisions.yaml", "agents/decisions.yaml"):
             target = self.root / relative
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(SOURCE / relative, target)
@@ -36,8 +40,10 @@ class InitializationTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         metadata = json.loads((self.root / "project.json").read_text())
         self.assertEqual(metadata["name"], "sample-project")
-        self.assertEqual(metadata["aegis"]["version"], "0.2.0")
+        self.assertEqual(metadata["aegis"]["version"], "0.2.1")
         self.assertIn("NOT ADMITTED", (self.root / "docs/discussion/initial-assignment.draft.md").read_text())
+        self.assertEqual((self.root / "framework/decisions.yaml").read_text(), "[]\n")
+        self.assertEqual((self.root / "agents/decisions.yaml").read_text(), "[]\n")
         self.assertEqual(before, (self.root / "README.md").read_bytes())
         snapshot = self.snapshot()
         mtimes = {p: p.stat().st_mtime_ns for p in self.root.rglob("*")}
@@ -47,9 +53,47 @@ class InitializationTests(unittest.TestCase):
 
     def test_dry_run_writes_nothing(self):
         before = self.snapshot()
-        self.assertEqual(self.run_init("--dry-run").returncode, 0)
+        result = self.run_init("--dry-run")
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("Would replace framework/decisions.yaml", result.stdout)
+        self.assertIn("Would create project.json", result.stdout)
         self.assertEqual(before, self.snapshot())
         self.assertFalse((self.root / "docs/discussion").exists())
+
+    def test_exact_bundled_maintenance_logs_are_replaced_with_valid_empty_project_logs(self):
+        result = self.run_init()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        for relative in ("framework/decisions.yaml", "agents/decisions.yaml"):
+            self.assertEqual((self.root / relative).read_bytes(), b"[]\n")
+        schema = json.loads((SOURCE / "framework/language/schemas/decision.schema.json").read_text())
+        validator = jsonschema.Draft202012Validator(schema)
+        validator.validate([])
+
+    def test_edited_or_unrecognized_maintenance_log_is_a_preflight_collision(self):
+        log = self.root / "framework/decisions.yaml"
+        log.write_text("[]\n", encoding="utf-8")
+        before = self.snapshot()
+        result = self.run_init()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(before, self.snapshot())
+
+    def test_mutation_failure_rolls_back_replaced_logs_and_created_outputs(self):
+        spec = importlib.util.spec_from_file_location("aegis_test_init", self.root / "scripts/init.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        calls = []
+
+        def fail_after_two(path, content, replace):
+            calls.append(path)
+            if len(calls) == 3:
+                raise OSError("simulated interrupted write")
+            module.write_output(path, content, replace)
+
+        before = self.snapshot()
+        with self.assertRaises(OSError):
+            module.initialize(self.root, "sample-project", "", writer=fail_after_two)
+        self.assertEqual(before, self.snapshot())
+        self.assertFalse((self.root / "project.json").exists())
 
     def test_brief_starts_with_problem_and_preserves_proposal_status(self):
         result = self.run_init("--description", "People lose track of follow-up work")

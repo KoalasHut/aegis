@@ -1,0 +1,89 @@
+- id: SC-TODO-001
+  title: Completing a task emits a completion event and preserves list order
+  exercises: [BR-TODO-001]
+  verification: automated
+  given:
+    steps:
+    - command: tasks.add
+      input: { title: Write outline }
+      as: task1
+    - command: tasks.add
+      input: { title: Review outline }
+      as: task2
+  when:
+    command: tasks.complete
+    input: { taskId: '${task1.task.id}' }
+  then:
+    output:
+      task: { id: '${task1.task.id}', position: 1, state: complete }
+    events: [tasks.task-completed@1]
+    observe:
+    - query: tasks.list
+      input: {}
+      expect:
+        items:
+        - { id: '${task1.task.id}', position: 1, state: complete }
+        - { id: '${task2.task.id}', position: 2, state: open }
+
+- id: SC-TODO-002
+  title: Completing then reopening a task keeps its position
+  exercises: [BR-TODO-001]
+  verification: automated
+  given:
+    steps:
+    - command: tasks.add
+      input: { title: Write outline }
+      as: task1
+    - command: tasks.add
+      input: { title: Review outline }
+      as: task2
+    - command: tasks.complete
+      input: { taskId: '${task1.task.id}' }
+  when:
+    command: tasks.reopen
+    input: { taskId: '${task1.task.id}' }
+  then:
+    output:
+      task: { id: '${task1.task.id}', position: 1, state: open }
+    observe:
+    - query: tasks.list
+      input: {}
+      expect:
+        items:
+        - { id: '${task1.task.id}', position: 1, state: open }
+        - { id: '${task2.task.id}', position: 2, state: open }
+
+- id: SC-TODO-003
+  title: A due unfinished task is reported as overdue after time advances
+  exercises: [BR-TODO-002, BR-TODO-003]
+  verification: automated
+  given:
+    clock: '2026-10-02T08:00:00Z'
+    steps:
+    - command: tasks.add
+      input: { title: Review outline, dueAt: '2026-10-02T09:00:00Z' }
+      as: task1
+    - advanceClock: PT2H
+  when:
+    query: tasks.list
+    input: {}
+  then:
+    output:
+      items:
+        $contains:
+        - { id: '${task1.task.id}', urgency: overdue }
+
+- id: SC-TODO-004
+  title: An intentional rejected setup command leaves the list empty
+  exercises: [BR-TODO-006]
+  verification: automated
+  given:
+    steps:
+    - command: tasks.add
+      input: { title: '' }
+      expectError: TITLE_REQUIRED
+  when:
+    query: tasks.list
+    input: {}
+  then:
+    output: { items: [] }

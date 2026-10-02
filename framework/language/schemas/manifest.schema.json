@@ -1,5 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aegis.dev/framework/language/schemas/manifest.schema.json",
   "title": "Manifest",
   "type": "object",
   "properties": {
@@ -228,18 +229,12 @@
       "properties": {
         "enforces": {
           "type": "array",
-          "items": {
-            "type": "string",
-            "pattern": "^BR-[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-[0-9]{3}$"
-          },
+          "items": { "$ref": "common.schema.json#/$defs/ruleId" },
           "uniqueItems": true
         },
         "observes": {
           "type": "array",
-          "items": {
-            "type": "string",
-            "pattern": "^BR-[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-[0-9]{3}$"
-          },
+          "items": { "$ref": "common.schema.json#/$defs/ruleId" },
           "uniqueItems": true
         }
       },
@@ -252,10 +247,7 @@
       "properties": {
         "covers": {
           "type": "array",
-          "items": {
-            "type": "string",
-            "pattern": "^SC-[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-[0-9]{3}$"
-          },
+          "items": { "$ref": "common.schema.json#/$defs/scenarioId" },
           "uniqueItems": true
         }
       },

@@ -1,0 +1,35 @@
+- id: D-AEGIS-006
+  title: "OD-6 — Change lane direction"
+  question: "Which changes require the full chain?"
+  decision: "Core changes, including rules, scenarios, glossary meanings and public contracts, require the full chain. A future implementation lane is reserved for unchanged core; no lane shortcut or enforcement is delivered."
+  status: approved
+  approver: Diego
+  date: "2026-10-01"
+  source: "Aegis maintenance conversation, 2026-10-01; Diego approved OD-1 through OD-7; retained by aegis-020-workflow/aegis-020-orchestrator. Proposal SHA256 9f0412c5c4c2048e7454fceba3ee31b5c0b31d426268f036600b7a835cd5da29. Transcribed under aegis-021-release."
+  affects:
+    - agents/stage-contracts.md
+    - agents/doctrine.md
+- id: D-AEGIS-007
+  title: "OD-7 — Core-preservation release"
+  question: "How should the core-preservation milestone be versioned?"
+  decision: "Release the core-preservation milestone as 0.2.0 with manual migration. Agent protocol stays 0.1.0."
+  status: approved
+  approver: Diego
+  date: "2026-10-01"
+  source: "Aegis maintenance conversation, 2026-10-01; Diego approved OD-1 through OD-7; retained by aegis-020-workflow/aegis-020-orchestrator. Proposal SHA256 9f0412c5c4c2048e7454fceba3ee31b5c0b31d426268f036600b7a835cd5da29. Transcribed under aegis-021-release."
+  affects:
+    - VERSION
+    - CHANGELOG.md
+    - docs/MIGRATION-0.2.md
+- id: D-AEGIS-013
+  title: "OD-13 — Continuous validation host"
+  question: "Where should the artifact gate run?"
+  decision: "Use GitHub Actions on pushes and pull requests with Python 3.9 and latest stable 3.x, strict warnings, PR base comparison and uploaded JSON findings. Required branch checks are configured manually. This does not establish behavioral conformance."
+  status: approved
+  approver: Diego
+  date: "2026-10-02"
+  source: "Aegis maintenance conversation, 2026-10-02; Diego approved OD-8 through OD-13 and ordered given.steps with legacy 0.2.x compatibility; retained by aegis-021-orchestrator and aegis-021-release. Plan SHA256 de054ce52e20241f5de34d579112904e3d92ea7e0fa9a9ccde536709a8057af2."
+  affects:
+    - .github/workflows/validate.yml
+    - docs/GETTING_STARTED.md
+    - CONTRIBUTING.md

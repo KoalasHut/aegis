@@ -1,0 +1,21 @@
+id: tasks.complete
+version: 1.0.0
+kind: command
+summary: Mark a task as complete.
+types:
+  Task: A task with identity, title, position, completion state, and urgency.
+input:
+  taskId:
+    type: TaskId
+    required: true
+    description: The identity of the task to complete.
+output:
+  task:
+    type: Task
+    required: true
+    description: The completed task.
+errors:
+  - code: TASK_UNKNOWN
+    meaning: No task has the requested identity.
+semantics:
+  - Completing a task leaves its position unchanged.

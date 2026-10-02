@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aegis.dev/framework/language/schemas/common.schema.json",
+  "title": "Aegis common identifiers",
+  "$defs": {
+    "ruleId": { "type": "string", "pattern": "^BR-[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-[0-9]{3}$" },
+    "scenarioId": { "type": "string", "pattern": "^SC-[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-[0-9]{3}$" },
+    "decisionId": { "type": "string", "pattern": "^D-[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-[0-9]{3}$" },
+    "eventRef": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9._-]*@[0-9]+$" }
+  }
+}
