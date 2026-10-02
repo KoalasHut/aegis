@@ -4,6 +4,7 @@ kind: query
 summary: Determine whether approved automated rules are covered by scenarios.
 types:
   CoverageStatus: The coverage result for a set of approved automated rules.
+  RuleId: The opaque identity of a domain rule.
 input:
   approvedAutomatedRules:
     type: RuleId[]

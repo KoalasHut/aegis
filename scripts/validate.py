@@ -3,6 +3,7 @@
 
 import argparse
 import datetime as dt
+import hashlib
 import json
 import re
 import subprocess
@@ -14,11 +15,22 @@ import jsonschema
 import yaml
 from referencing import Registry, Resource
 
+try:
+    from scripts.init import MAINTENANCE_LOG_HASHES
+    from scripts.aegis_match import SCALAR_TYPES, scalar_validation_error
+except ModuleNotFoundError:  # Running this file directly outside the repository cwd.
+    from init import MAINTENANCE_LOG_HASHES
+    from aegis_match import SCALAR_TYPES, scalar_validation_error
+
 
 SCRIPT_ROOT = Path(__file__).resolve().parents[1]
 DECISION_PATTERN = re.compile(r"\bD-[A-Z][A-Z0-9-]*-[0-9]{3}\b")
 DEFAULT_NEUTRALITY_WORDS = SCRIPT_ROOT / "framework" / "language" / "neutrality-words.txt"
-CAPTURE_PATTERN = re.compile(r"\$\{([A-Za-z][A-Za-z0-9_]*)\.([A-Za-z][A-Za-z0-9_]*)(?:\.[^}]+)?\}")
+CAPTURE_NAME_PATTERN = re.compile(r"^[a-z][a-zA-Z0-9_]*$")
+CAPTURE_PATH_PATTERN = re.compile(
+    r"^([a-z][a-zA-Z0-9_]*)\.([A-Za-z][A-Za-z0-9_]*)(?:\.[A-Za-z0-9_]+)*$")
+CANONICAL_AEGIS_ORIGIN = re.compile(
+    r"^(?:git@github\.com:|https://github\.com/)KoalasHut/aegis(?:\.git)?/?$")
 
 
 def is_rfc3339_datetime(value):
@@ -276,6 +288,27 @@ def add_neutrality_warnings(value, path, findings, words, allowed=()):
                          "stack-specific word '%s' requires review" % match.group(0))
 
 
+def is_capture_token(value):
+    if not isinstance(value, str) or not value.startswith("${") or not value.endswith("}"):
+        return False
+    return CAPTURE_PATH_PATTERN.fullmatch(value[2:-1]) is not None
+
+
+def is_matcher_object(value):
+    return (isinstance(value, dict) and
+            any(isinstance(key, str) and key.startswith("$") for key in value))
+
+
+def validate_typed_literal(value, declared_type, path, location, findings):
+    """Validate one top-level literal using the reference matcher's parser."""
+    if declared_type not in SCALAR_TYPES or is_capture_token(value) or is_matcher_object(value):
+        return
+    code = scalar_validation_error(value, declared_type)
+    if code:
+        findings.add("error", code, path,
+                     "%s must be a valid %s literal" % (location, declared_type))
+
+
 def validate_fields(value, contract, field_name, path, location, findings, required=True):
     """Check a scenario object against a contract's top-level field declaration."""
     if not isinstance(value, dict) or contract is None:
@@ -287,6 +320,11 @@ def validate_fields(value, contract, field_name, path, location, findings, requi
         if key not in declared:
             findings.add("error", "UNKNOWN_%s_FIELD" % field_name.upper(), path,
                          "%s supplies undeclared %s field %s" % (location, field_name, key))
+            continue
+        definition = declared[key]
+        if isinstance(definition, dict):
+            validate_typed_literal(value[key], definition.get("type"), path,
+                                   "%s.%s" % (location, key), findings)
     if required:
         for key, definition in declared.items():
             if isinstance(definition, dict) and definition.get("required") and key not in value:
@@ -296,13 +334,31 @@ def validate_fields(value, contract, field_name, path, location, findings, requi
 
 def validate_capture_references(value, captures, path, location, findings):
     for text in walk_strings(value):
-        for capture, output in CAPTURE_PATTERN.findall(text):
-            if capture not in captures:
-                findings.add("error", "UNKNOWN_CAPTURE", path,
-                             "%s references capture %s before it is available" % (location, capture))
-            elif output not in captures[capture]:
-                findings.add("error", "UNKNOWN_CAPTURE_OUTPUT", path,
-                             "%s references undeclared output %s.%s" % (location, capture, output))
+        if "${" not in text:
+            continue
+        if not (text.startswith("${") and text.endswith("}")):
+            findings.add("error", "INVALID_CAPTURE_REFERENCE", path,
+                         "%s contains an interpolated or malformed capture token" % location)
+            continue
+        reference = text[2:-1]
+        if "." not in reference:
+            findings.add("error", "BARE_CAPTURE_REFERENCE", path,
+                         "%s references whole capture %s; use ${%s.field}" %
+                         (location, reference, reference))
+            continue
+        match = CAPTURE_PATH_PATTERN.fullmatch(reference)
+        if match is None:
+            findings.add("error", "INVALID_CAPTURE_REFERENCE", path,
+                         "%s contains invalid capture reference ${%s}" %
+                         (location, reference))
+            continue
+        capture, output = match.group(1), match.group(2)
+        if capture not in captures:
+            findings.add("error", "UNKNOWN_CAPTURE", path,
+                         "%s references capture %s before it is available" % (location, capture))
+        elif output not in captures[capture]:
+            findings.add("error", "UNKNOWN_CAPTURE_OUTPUT", path,
+                         "%s references undeclared output %s.%s" % (location, capture, output))
 
 
 def validate_supersession(records, kind, path_for, findings):
@@ -323,7 +379,8 @@ def validate_supersession(records, kind, path_for, findings):
             findings.add("error", "SUPERSEDED_%s_ACTIVE" % kind, path_for(record),
                          "superseded %s %s must retain %s status" %
                          (kind.lower(), target, expected_status))
-        if record.get("status") not in {"deprecated", "superseded"}:
+        if ((kind == "DECISION" and record.get("status") == "approved") or
+                (kind == "RULE" and record.get("status") != "deprecated")):
             targets[target] += 1
         graph[identifier] = target
     for target, count in targets.items():
@@ -358,7 +415,32 @@ def contract_language(contract):
                     yield field.get("description", "")
 
 
-def validate_references(scenarios, rules, contracts, decisions, reference_documents, findings):
+def contract_type_is_known(type_name, contract):
+    if not isinstance(type_name, str):
+        return True  # Structural schema validation owns missing or non-string names.
+    base = type_name
+    while base.endswith("[]"):
+        base = base[:-2]
+    return bool(base) and (base in SCALAR_TYPES or base in contract.get("types", {}))
+
+
+def add_contract_type_warnings(contract, path, findings):
+    for section in ("input", "output", "fields"):
+        fields = contract.get(section, {})
+        if not isinstance(fields, dict):
+            continue
+        for name, definition in fields.items():
+            if not isinstance(definition, dict):
+                continue
+            type_name = definition.get("type")
+            if not contract_type_is_known(type_name, contract):
+                findings.add("warning", "UNKNOWN_SCALAR_TYPE", path,
+                             "%s.%s declares unknown type %s; define it in types or use an "
+                             "Aegis scalar" % (section, name, type_name))
+
+
+def validate_references(scenarios, rules, contracts, decisions, reference_documents, findings,
+                        project_scope=False):
     rule_by_id = {rule.get("id"): rule for rule, _ in rules if isinstance(rule, dict)}
     contract_by_id = {contract.get("id"): contract for contract, _ in contracts
                       if isinstance(contract, dict) and contract.get("id")}
@@ -366,11 +448,16 @@ def validate_references(scenarios, rules, contracts, decisions, reference_docume
 
     for rule, path in rules:
         decision = rule.get("decision")
+        if project_scope and isinstance(decision, str) and decision.startswith("D-AEGIS-"):
+            findings.add("error", "MAINTENANCE_DECISION_CITED", path,
+                         "rule %s cites maintenance decision %s; run scripts/init.py and "
+                         "record a product decision instead" % (rule.get("id"), decision))
         decision_record = decisions.get(decision) if decision else None
         if decision and decision_record is None:
             findings.add("error", "UNKNOWN_DECISION", path,
                          "rule %s references unknown decision %s" % (rule.get("id"), decision))
-        elif decision and decision_record.get("status") != "approved":
+        elif (decision and decision_record.get("status") != "approved" and
+              rule.get("status") != "deprecated"):
             findings.add("error", "DECISION_NOT_APPROVED", path,
                          "rule %s references decision %s with status %s" %
                          (rule.get("id"), decision, decision_record.get("status")))
@@ -445,6 +532,7 @@ def validate_references(scenarios, rules, contracts, decisions, reference_docume
 
         given = scenario.get("given", {})
         captures = {}
+        capture_steps = {}
         setup_steps = given.get("steps", given.get("commands", [])) if isinstance(given, dict) else []
         for index, command in enumerate(setup_steps):
             if not isinstance(command, dict):
@@ -465,8 +553,23 @@ def validate_references(scenarios, rules, contracts, decisions, reference_docume
                     findings.add("error", "UNKNOWN_ERROR_CODE", path,
                                  "given.steps[%s].expectError %s is not declared by %s" %
                                  (index, command["expectError"], operation.get("id")))
-            if command.get("as") and operation is not None:
-                captures[command["as"]] = set(operation.get("output", {}))
+            capture = command.get("as")
+            if capture:
+                capture_is_valid = bool(CAPTURE_NAME_PATTERN.fullmatch(str(capture)))
+                if not capture_is_valid:
+                    findings.add("error", "SCHEMA_INVALID", path,
+                                 "given.steps[%s].as must match ^[a-z][a-zA-Z0-9_]*$" % index)
+                if capture in capture_steps:
+                    findings.add("error", "DUPLICATE_CAPTURE", path,
+                                 "capture %s is declared by both given.steps[%s] and "
+                                 "given.steps[%s]" % (capture, capture_steps[capture], index))
+                else:
+                    capture_steps[capture] = index
+                if command.get("expectError"):
+                    findings.add("error", "SCHEMA_INVALID", path,
+                                 "given.steps[%s]: a step with expectError cannot declare as" % index)
+                elif operation is not None and capture_is_valid and capture not in captures:
+                    captures[capture] = set(operation.get("output", {}))
         if isinstance(given.get("seed"), dict):
             seed = require_contract(given["seed"].get("contract"), "port", path, "given.seed")
             validate_capture_references(given["seed"].get("input", {}), captures, path,
@@ -615,6 +718,7 @@ def validate_scope(root, neutrality_words_path=None, scope_name="project", proje
     for contract, path in contracts:
         add_neutrality_warnings(list(contract_language(contract)), path, findings, neutrality_words,
                                 allowed_neutrality_words(root / path, root))
+        add_contract_type_warnings(contract, path, findings)
     for glossary in root.rglob("glossary.md"):
         if excluded_from_scan(glossary, root, project_scope):
             continue
@@ -626,7 +730,12 @@ def validate_scope(root, neutrality_words_path=None, scope_name="project", proje
                           lambda rule: rule_paths[id(rule)], findings)
     validate_supersession([decision for decision, _ in decision_records], "DECISION",
                           lambda decision: decision_paths[id(decision)], findings)
-    validate_references(scenarios, rules, contracts, decisions, reference_documents, findings)
+    validate_references(scenarios, rules, contracts, decisions, reference_documents, findings,
+                        project_scope)
+
+    if project_scope and not (root / "project.json").is_file() and not is_aegis_template(root):
+        findings.add("warning", "PROJECT_NOT_INITIALIZED", Path("project.json"),
+                     "project.json is missing; run scripts/init.py before adding product artifacts")
 
     findings.items.sort(key=lambda item: (item["severity"], item["code"], item["path"], item["message"]))
     for item in findings.items:
@@ -648,38 +757,113 @@ def scoped_rules(root):
     return found, paths
 
 
-def base_rules(root, base, findings):
+def scoped_decisions(root):
+    found = {}
+    paths = {}
+    scratch = Findings()
+    for path in artifact_paths(root, project_scope=True):
+        if path.name != "decisions.yaml":
+            continue
+        document = load_document(path, scratch, root)
+        for decision in document if isinstance(document, list) else []:
+            if isinstance(decision, dict) and decision.get("id"):
+                found[decision["id"]] = decision
+                paths[decision["id"]] = relative(path, root)
+    return found, paths
+
+
+def is_aegis_template(root):
+    """Recognize only canonical Aegis with the maintenance logs known by init.py."""
+    for name, expected in MAINTENANCE_LOG_HASHES.items():
+        path = root / name
+        if not path.is_file():
+            return False
+        try:
+            actual = hashlib.sha256(path.read_bytes()).hexdigest()
+        except OSError:
+            return False
+        if actual != expected:
+            return False
+    try:
+        origin = subprocess.run(
+            ["git", "-C", str(root), "remote", "get-url", "origin"],
+            text=True, capture_output=True, check=True).stdout.strip()
+    except (OSError, subprocess.CalledProcessError):
+        return False
+    return CANONICAL_AEGIS_ORIGIN.fullmatch(origin) is not None
+
+
+def git_revision_documents(root, base, findings):
+    """Load scoped YAML once from a git revision for all history protections."""
     try:
         listed = subprocess.run(["git", "-C", str(root), "ls-tree", "-r", "--name-only", base,
-                                 "--", "framework/contexts", "framework/constitution"],
+                                 "--"],
                                 text=True, capture_output=True, check=True)
     except (OSError, subprocess.CalledProcessError) as exc:
         findings.add("error", "BASE_REF_UNAVAILABLE", root,
                      "cannot read git base %s: %s" % (base, getattr(exc, "stderr", str(exc)).strip()))
-        return {}, {}
-    found, paths = {}, {}
+        return []
+    documents = []
     for name in listed.stdout.splitlines():
-        if not name.endswith((".yaml", ".yml")) or "rules" not in Path(name).parts:
+        path = Path(name)
+        if path.suffix not in {".yaml", ".yml"} or excluded_from_scan(root / path, root, True):
             continue
         content = subprocess.run(["git", "-C", str(root), "show", "%s:%s" % (base, name)],
                                  text=True, capture_output=True)
         if content.returncode:
+            findings.add("error", "BASE_ARTIFACT_UNAVAILABLE", path,
+                         "cannot read %s from %s: %s" %
+                         (path, base, content.stderr.strip()))
             continue
         try:
             document = yaml.safe_load(content.stdout)
-        except yaml.YAMLError:
+        except yaml.YAMLError as exc:
+            findings.add("error", "BASE_PARSE_ERROR", path,
+                         "cannot parse %s from %s: %s" % (path, base, exc))
             continue
-        if not is_domain_rule(Path(name), document):
+        documents.append((path, document))
+    return documents
+
+
+def rules_from_documents(documents, findings=None):
+    found, paths = {}, {}
+    for path, document in documents:
+        if not is_domain_rule(path, document):
             continue
         for rule in document if isinstance(document, list) else [document]:
             if isinstance(rule, dict) and rule.get("id"):
-                found[rule["id"]] = rule
-                paths[rule["id"]] = Path(name)
+                identifier = rule["id"]
+                if identifier in found and findings is not None:
+                    findings.add("error", "DUPLICATE_ID", path,
+                                 "base revision declares rule %s more than once (%s, %s)" %
+                                 (identifier, paths[identifier], path))
+                    continue
+                found[identifier] = rule
+                paths[identifier] = path
+    return found, paths
+
+
+def decisions_from_documents(documents, findings=None):
+    found, paths = {}, {}
+    for path, document in documents:
+        if path.name != "decisions.yaml":
+            continue
+        for decision in document if isinstance(document, list) else []:
+            if isinstance(decision, dict) and decision.get("id"):
+                identifier = decision["id"]
+                if identifier in found and findings is not None:
+                    findings.add("error", "DUPLICATE_ID", path,
+                                 "base revision declares decision %s more than once (%s, %s)" %
+                                 (identifier, paths[identifier], path))
+                    continue
+                found[identifier] = decision
+                paths[identifier] = path
     return found, paths
 
 
 def validate_base(root, base, findings):
-    previous, previous_paths = base_rules(root, base, findings)
+    base_documents = git_revision_documents(root, base, findings)
+    previous, previous_paths = rules_from_documents(base_documents, findings)
     current, current_paths = scoped_rules(root)
     for identifier, before in previous.items():
         after = current.get(identifier)
@@ -697,6 +881,38 @@ def validate_base(root, base, findings):
         if any(before.get(key) != after.get(key) for key in ("title", "rationale")):
             findings.add("warning", "APPROVED_RULE_TEXT_CHANGED", path,
                          "approved rule %s changed title or rationale since %s" % (identifier, base))
+
+    previous_decisions, previous_decision_paths = decisions_from_documents(base_documents, findings)
+    current_decisions, current_decision_paths = scoped_decisions(root)
+    for identifier, before in previous_decisions.items():
+        after = current_decisions.get(identifier)
+        path = current_decision_paths.get(identifier, previous_decision_paths[identifier])
+        if after is None:
+            findings.add("error", "DECISION_ID_REMOVED", path,
+                         "decision %s was removed since %s" % (identifier, base))
+            continue
+        if before.get("status") != "approved":
+            continue
+        governed_changed = any(before.get(key) != after.get(key)
+                               for key in ("question", "decision", "approver", "date", "source",
+                                           "supersedes"))
+        status = after.get("status")
+        if governed_changed or status not in {"approved", "superseded"}:
+            findings.add("error", "APPROVED_DECISION_EDITED", path,
+                         "approved decision %s changed governed fields since %s" %
+                         (identifier, base))
+        if any(before.get(key) != after.get(key) for key in ("title", "affects")):
+            findings.add("warning", "APPROVED_DECISION_TEXT_CHANGED", path,
+                         "approved decision %s changed title or affects since %s" %
+                         (identifier, base))
+        if status == "superseded":
+            replacements = [decision for decision in current_decisions.values()
+                            if decision.get("status") == "approved" and
+                            decision.get("supersedes") == identifier]
+            if not replacements:
+                findings.add("error", "SUPERSESSION_MISSING", path,
+                             "decision %s became superseded without an approved replacement" %
+                             identifier)
 
 
 def validate(root, neutrality_words_path=None, base=None):

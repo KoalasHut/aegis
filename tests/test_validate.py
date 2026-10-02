@@ -40,6 +40,14 @@ class ValidationTests(unittest.TestCase):
         command.extend(extra)
         return subprocess.run(command, text=True, capture_output=True)
 
+    def commit_root(self, root):
+        for command in (("git", "init", "-q", str(root)),
+                        ("git", "-C", str(root), "config", "user.email", "test@example.invalid"),
+                        ("git", "-C", str(root), "config", "user.name", "Validator test"),
+                        ("git", "-C", str(root), "add", "."),
+                        ("git", "-C", str(root), "commit", "-qm", "base")):
+            subprocess.run(command, check=True, capture_output=True)
+
     def codes(self, root):
         result = self.run_validator(root)
         payload = json.loads(result.stdout)
@@ -490,6 +498,360 @@ class ValidationTests(unittest.TestCase):
         payload = json.loads(strict.stdout)
         self.assertEqual(payload["errors"], 0)
         self.assertGreater(payload["warnings"], 0)
+
+    def test_base_comparison_protects_approved_decision_meaning_and_identity(self):
+        changes = {
+            "question": "May title-free tasks be recorded?",
+            "decision": "Permit a title-free task",
+            "status": "rejected",
+            "approver": "another steward",
+            "date": "2026-10-02",
+            "source": "another source",
+        }
+        for field, replacement in changes.items():
+            with self.subTest(field=field):
+                root = self.make_root()
+                self.commit_root(root)
+                decisions_path = root / "framework/decisions.yaml"
+                decisions = yaml.safe_load(decisions_path.read_text(encoding="utf-8"))
+                decisions[0][field] = replacement
+                decisions_path.write_text(yaml.safe_dump(decisions, sort_keys=False), encoding="utf-8")
+                result = self.run_validator(root, True, "--base", "HEAD")
+                self.assertIn("APPROVED_DECISION_EDITED",
+                              self.codes_from_result(result))  # F-1 / CPR-006
+
+        root = self.make_root()
+        self.commit_root(root)
+        decisions_path = root / "framework/decisions.yaml"
+        decisions_path.write_text("[]\n", encoding="utf-8")
+        result = self.run_validator(root, True, "--base", "HEAD")
+        self.assertIn("DECISION_ID_REMOVED", self.codes_from_result(result))  # F-2
+
+    def test_base_comparison_protects_approved_decision_supersedes_retargeting(self):
+        root = self.make_root()
+        decisions_path = root / "framework/decisions.yaml"
+        decisions = yaml.safe_load(decisions_path.read_text(encoding="utf-8"))
+        old = decisions[0]
+        old["status"] = "superseded"
+        other = dict(old, id="D-TASKS-002", title="Other old decision")
+        current = dict(old, id="D-TASKS-003", title="Current", status="approved",
+                       decision="Current decision", supersedes="D-TASKS-001")
+        decisions.extend([other, current])
+        decisions_path.write_text(yaml.safe_dump(decisions, sort_keys=False), encoding="utf-8")
+        rules_path = root / "framework/contexts/tasks/rules/tasks.yaml"
+        rules_path.write_text(rules_path.read_text(encoding="utf-8").replace(
+            "D-TASKS-001", "D-TASKS-003"), encoding="utf-8")
+        self.commit_root(root)
+
+        decisions[-1]["supersedes"] = "D-TASKS-002"
+        decisions_path.write_text(yaml.safe_dump(decisions, sort_keys=False), encoding="utf-8")
+        result = self.run_validator(root, True, "--base", "HEAD")
+        self.assertIn("APPROVED_DECISION_EDITED", self.codes_from_result(result))
+
+    def test_base_comparison_warns_for_decision_text_and_allows_proposal_edits(self):
+        root = self.make_root()
+        decisions_path = root / "framework/decisions.yaml"
+        decisions = yaml.safe_load(decisions_path.read_text(encoding="utf-8"))
+        decisions[0]["affects"] = ["framework/contexts/tasks"]
+        decisions.append({
+            "id": "D-TASKS-002", "title": "Draft", "question": "Old question",
+            "decision": "Old proposal", "status": "proposed",
+        })
+        decisions_path.write_text(yaml.safe_dump(decisions, sort_keys=False), encoding="utf-8")
+        self.commit_root(root)
+
+        decisions[0]["title"] = "Editorially renamed"
+        decisions[0]["affects"] = ["framework/contexts/tasks", "docs"]
+        decisions[1]["question"] = "New question"
+        decisions[1]["decision"] = "A completely revised proposal"
+        decisions_path.write_text(yaml.safe_dump(decisions, sort_keys=False), encoding="utf-8")
+        result = self.run_validator(root, True, "--base", "HEAD")
+        codes = self.codes_from_result(result)
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertIn("APPROVED_DECISION_TEXT_CHANGED", codes)
+        self.assertNotIn("APPROVED_DECISION_EDITED", codes)
+
+    def test_approved_decision_supersession_requires_and_accepts_replacement(self):
+        root = self.make_root()
+        self.commit_root(root)
+        decisions_path = root / "framework/decisions.yaml"
+        decisions = yaml.safe_load(decisions_path.read_text(encoding="utf-8"))
+        decisions[0]["status"] = "superseded"
+        decisions_path.write_text(yaml.safe_dump(decisions, sort_keys=False), encoding="utf-8")
+        result = self.run_validator(root, True, "--base", "HEAD")
+        codes = self.codes_from_result(result)
+        self.assertIn("SUPERSESSION_MISSING", codes)
+        self.assertIn("DECISION_NOT_APPROVED", codes)
+
+        replacement = dict(decisions[0], id="D-TASKS-002", status="approved",
+                           title="Replacement", decision="Require a useful title",
+                           supersedes="D-TASKS-001")
+        decisions.append(replacement)
+        decisions_path.write_text(yaml.safe_dump(decisions, sort_keys=False), encoding="utf-8")
+        rules_path = root / "framework/contexts/tasks/rules/tasks.yaml"
+        rules = yaml.safe_load(rules_path.read_text(encoding="utf-8"))
+        rules[0]["status"] = "deprecated"
+        rules.append(dict(rules[0], id="BR-TASKS-002", status="approved",
+                          decision="D-TASKS-002", supersedes="BR-TASKS-001"))
+        rules_path.write_text(yaml.safe_dump(rules, sort_keys=False), encoding="utf-8")
+        scenarios_path = root / "framework/contexts/tasks/scenarios/tasks.yaml"
+        scenarios_path.write_text(scenarios_path.read_text(encoding="utf-8").replace(
+            "BR-TASKS-001", "BR-TASKS-002"), encoding="utf-8")
+        result = self.run_validator(root, True, "--base", "HEAD")
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertNotIn("SUPERSESSION_MISSING", self.codes_from_result(result))
+
+    def test_capture_names_are_unique_and_failed_steps_produce_no_capture(self):
+        root = self.make_root()
+        path = root / "framework/contexts/tasks/scenarios/tasks.yaml"
+        scenarios = yaml.safe_load(path.read_text(encoding="utf-8"))
+        scenarios[0]["given"] = {"steps": [
+            {"command": "tasks.add", "input": {"title": "first"}, "as": "saved"},
+            {"command": "tasks.add", "input": {"title": "second"}, "as": "saved"},
+        ]}
+        path.write_text(yaml.safe_dump(scenarios, sort_keys=False), encoding="utf-8")
+        result, codes, payload = self.codes(root)
+        self.assertIn("DUPLICATE_CAPTURE", codes)  # F-3
+        duplicate = next(item for item in payload["findings"]
+                         if item["code"] == "DUPLICATE_CAPTURE")
+        self.assertIn("given.steps[0]", duplicate["message"])
+        self.assertIn("given.steps[1]", duplicate["message"])
+
+        root = self.make_root()
+        path = root / "framework/contexts/tasks/scenarios/tasks.yaml"
+        scenarios = yaml.safe_load(path.read_text(encoding="utf-8"))
+        scenarios[0]["given"] = {"steps": [{
+            "command": "tasks.add", "input": {"title": ""},
+            "expectError": "TITLE_EMPTY", "as": "failed",
+        }]}
+        scenarios[0]["when"]["input"]["title"] = "${failed.item.id}"
+        path.write_text(yaml.safe_dump(scenarios, sort_keys=False), encoding="utf-8")
+        result, codes, _ = self.codes(root)
+        self.assertTrue({"SCHEMA_INVALID", "UNKNOWN_CAPTURE"}.issubset(codes), codes)  # F-4
+
+    def test_bare_capture_reference_is_rejected(self):
+        root = self.make_root()
+        path = root / "framework/contexts/tasks/scenarios/tasks.yaml"
+        scenarios = yaml.safe_load(path.read_text(encoding="utf-8"))
+        scenarios[0]["given"] = {"steps": [
+            {"command": "tasks.add", "input": {"title": "first"}, "as": "saved"},
+        ]}
+        scenarios[0]["when"]["input"]["title"] = "${saved}"
+        path.write_text(yaml.safe_dump(scenarios, sort_keys=False), encoding="utf-8")
+        result, codes, _ = self.codes(root)
+        self.assertIn("BARE_CAPTURE_REFERENCE", codes)
+
+        root = self.make_root()
+        path = root / "framework/contexts/tasks/scenarios/tasks.yaml"
+        scenarios = yaml.safe_load(path.read_text(encoding="utf-8"))
+        scenarios[0]["given"] = {"steps": [
+            {"command": "tasks.add", "input": {"title": "first"}, "as": "Saved"},
+        ]}
+        path.write_text(yaml.safe_dump(scenarios, sort_keys=False), encoding="utf-8")
+        result, codes, _ = self.codes(root)
+        self.assertIn("SCHEMA_INVALID", codes)
+
+        for reference in ("prefix ${saved.item.id}", "${saved.item.id", "${saved.item.id} suffix"):
+            with self.subTest(reference=reference):
+                root = self.make_root()
+                path = root / "framework/contexts/tasks/scenarios/tasks.yaml"
+                scenarios = yaml.safe_load(path.read_text(encoding="utf-8"))
+                scenarios[0]["given"] = {"steps": [
+                    {"command": "tasks.add", "input": {"title": "first"}, "as": "saved"},
+                ]}
+                scenarios[0]["when"]["input"]["title"] = reference
+                path.write_text(yaml.safe_dump(scenarios, sort_keys=False), encoding="utf-8")
+                result, codes, _ = self.codes(root)
+                self.assertIn("INVALID_CAPTURE_REFERENCE", codes)
+
+    def test_project_initialization_and_maintenance_decision_guards(self):
+        root = self.make_root()
+        (root / "project.json").unlink()
+        result, codes, payload = self.codes(root)
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertIn("PROJECT_NOT_INITIALIZED", codes)
+        self.assertEqual(payload["errors"], 0)
+
+        root = self.make_root()
+        decisions_path = root / "framework/decisions.yaml"
+        decisions = yaml.safe_load(decisions_path.read_text(encoding="utf-8"))
+        decisions.append({
+            "id": "D-AEGIS-001", "title": "Maintenance", "question": "How maintained?",
+            "decision": "Maintain Aegis", "status": "approved", "approver": "maintainer",
+            "date": "2026-10-02", "source": "maintenance",
+        })
+        decisions_path.write_text(yaml.safe_dump(decisions, sort_keys=False), encoding="utf-8")
+        rules_path = root / "framework/contexts/tasks/rules/tasks.yaml"
+        rules_path.write_text(rules_path.read_text(encoding="utf-8").replace(
+            "D-TASKS-001", "D-AEGIS-001"), encoding="utf-8")
+        result, codes, _ = self.codes(root)
+        self.assertIn("MAINTENANCE_DECISION_CITED", codes)  # F-7
+
+    def test_unknown_contract_types_warn_but_local_types_and_collections_pass(self):
+        root = self.make_root()
+        contract_path = root / "framework/blocks/tasks/contracts/add.yaml"
+        contract = yaml.safe_load(contract_path.read_text(encoding="utf-8"))
+        contract["input"]["title"]["type"] = "MysteryScalar"
+        contract_path.write_text(yaml.safe_dump(contract, sort_keys=False), encoding="utf-8")
+        result, codes, payload = self.codes(root)
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertIn("UNKNOWN_SCALAR_TYPE", codes)
+        self.assertEqual(payload["errors"], 0)
+
+        contract["types"]["MysteryScalar"] = "A locally defined semantic value."
+        contract["input"]["title"]["type"] = "MysteryScalar[]"
+        contract_path.write_text(yaml.safe_dump(contract, sort_keys=False), encoding="utf-8")
+        result, codes, _ = self.codes(root)
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertNotIn("UNKNOWN_SCALAR_TYPE", codes)
+
+    def test_typed_literals_use_contract_declared_scalar_types(self):
+        valid_values = {
+            "string": "text", "boolean": True, "integer": 1, "number": 1.5,
+            "decimal": 1.25, "date": "2026-10-02",
+            "datetime": "2026-10-02T09:00Z", "duration": "PT2H", "id": "opaque-1",
+        }
+        root = self.make_root()
+        contract_path = root / "framework/blocks/tasks/contracts/add.yaml"
+        contract = yaml.safe_load(contract_path.read_text(encoding="utf-8"))
+        scenario_path = root / "framework/contexts/tasks/scenarios/tasks.yaml"
+        scenarios = yaml.safe_load(scenario_path.read_text(encoding="utf-8"))
+        for declared_type, value in valid_values.items():
+            contract["input"][declared_type] = {
+                "type": declared_type, "required": False, "description": declared_type,
+            }
+            scenarios[0]["when"]["input"][declared_type] = value
+        contract_path.write_text(yaml.safe_dump(contract, sort_keys=False), encoding="utf-8")
+        scenario_path.write_text(yaml.safe_dump(scenarios, sort_keys=False), encoding="utf-8")
+        result, codes, _ = self.codes(root)
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertNotIn("INVALID_TYPED_VALUE", codes)
+
+        invalid_values = {
+            "string": 1, "boolean": "true", "integer": 1.5, "number": "1",
+            "decimal": "1.25", "date": "2026-02-30",
+            "datetime": "not-a-date", "duration": "two hours", "id": 7,
+        }
+        for declared_type, value in invalid_values.items():
+            with self.subTest(declared_type=declared_type):
+                root = self.make_root()
+                contract_path = root / "framework/blocks/tasks/contracts/add.yaml"
+                contract = yaml.safe_load(contract_path.read_text(encoding="utf-8"))
+                contract["input"]["title"]["type"] = declared_type
+                contract_path.write_text(yaml.safe_dump(contract, sort_keys=False), encoding="utf-8")
+                scenario_path = root / "framework/contexts/tasks/scenarios/tasks.yaml"
+                scenarios = yaml.safe_load(scenario_path.read_text(encoding="utf-8"))
+                scenarios[0]["when"]["input"]["title"] = value
+                scenario_path.write_text(yaml.safe_dump(scenarios, sort_keys=False), encoding="utf-8")
+                result, codes, _ = self.codes(root)
+                self.assertIn("INVALID_TYPED_VALUE", codes)
+
+        root = self.make_root()
+        contract_path = root / "framework/blocks/tasks/contracts/add.yaml"
+        contract = yaml.safe_load(contract_path.read_text(encoding="utf-8"))
+        contract["input"]["title"]["type"] = "datetime"
+        contract_path.write_text(yaml.safe_dump(contract, sort_keys=False), encoding="utf-8")
+        scenario_path = root / "framework/contexts/tasks/scenarios/tasks.yaml"
+        scenarios = yaml.safe_load(scenario_path.read_text(encoding="utf-8"))
+        scenarios[0]["when"]["input"]["title"] = "2026-10-02T09:00"
+        scenario_path.write_text(yaml.safe_dump(scenarios, sort_keys=False), encoding="utf-8")
+        result, codes, _ = self.codes(root)
+        self.assertIn("DATETIME_WITHOUT_OFFSET", codes)
+
+    def test_typed_validation_covers_output_and_observation_expect(self):
+        for route in ("output", "expect"):
+            with self.subTest(route=route):
+                root = self.make_root()
+                scenario_path = root / "framework/contexts/tasks/scenarios/tasks.yaml"
+                scenarios = yaml.safe_load(scenario_path.read_text(encoding="utf-8"))
+                if route == "output":
+                    contract_path = root / "framework/blocks/tasks/contracts/add.yaml"
+                    contract = yaml.safe_load(contract_path.read_text(encoding="utf-8"))
+                    contract["output"]["item"]["type"] = "datetime"
+                    scenarios[0]["then"]["output"]["item"] = "not-a-date"
+                else:
+                    contract_path = root / "framework/blocks/tasks/contracts/list.yaml"
+                    contract = yaml.safe_load(contract_path.read_text(encoding="utf-8"))
+                    contract["output"]["items"]["type"] = "date"
+                    scenarios[0]["then"]["observe"][0]["expect"]["items"] = "not-a-date"
+                contract_path.write_text(yaml.safe_dump(contract, sort_keys=False), encoding="utf-8")
+                scenario_path.write_text(yaml.safe_dump(scenarios, sort_keys=False), encoding="utf-8")
+                result, codes, _ = self.codes(root)
+                self.assertIn("INVALID_TYPED_VALUE", codes)
+
+    def test_typed_validation_skips_captures_matchers_and_opaque_nested_values(self):
+        root = self.make_root()
+        contract_path = root / "framework/blocks/tasks/contracts/add.yaml"
+        contract = yaml.safe_load(contract_path.read_text(encoding="utf-8"))
+        contract["input"]["title"]["type"] = "datetime"
+        contract_path.write_text(yaml.safe_dump(contract, sort_keys=False), encoding="utf-8")
+        scenario_path = root / "framework/contexts/tasks/scenarios/tasks.yaml"
+        scenarios = yaml.safe_load(scenario_path.read_text(encoding="utf-8"))
+        scenarios[0]["given"] = {"steps": [
+            {"command": "tasks.add", "input": {"title": {"$any": True}}, "as": "saved"},
+        ]}
+        scenarios[0]["when"]["input"]["title"] = "${saved.item.title}"
+        scenario_path.write_text(yaml.safe_dump(scenarios, sort_keys=False), encoding="utf-8")
+        result, codes, _ = self.codes(root)
+        self.assertNotIn("INVALID_TYPED_VALUE", codes)
+
+        root = self.make_root()
+        contract_path = root / "framework/blocks/tasks/contracts/add.yaml"
+        contract = yaml.safe_load(contract_path.read_text(encoding="utf-8"))
+        contract["input"]["title"]["type"] = "Task"
+        contract_path.write_text(yaml.safe_dump(contract, sort_keys=False), encoding="utf-8")
+        scenario_path = root / "framework/contexts/tasks/scenarios/tasks.yaml"
+        scenarios = yaml.safe_load(scenario_path.read_text(encoding="utf-8"))
+        scenarios[0]["when"]["input"]["title"] = {"dueAt": "not-a-date"}
+        scenario_path.write_text(yaml.safe_dump(scenarios, sort_keys=False), encoding="utf-8")
+        result, codes, _ = self.codes(root)
+        self.assertNotIn("INVALID_TYPED_VALUE", codes)
+
+    def test_base_loader_reports_malformed_yaml_and_duplicate_ids(self):
+        root = self.make_root()
+        decisions_path = root / "framework/decisions.yaml"
+        valid_decisions = decisions_path.read_text(encoding="utf-8")
+        decisions_path.write_text("- id: [unterminated\n", encoding="utf-8")
+        self.commit_root(root)
+        decisions_path.write_text(valid_decisions, encoding="utf-8")
+        result = self.run_validator(root, True, "--base", "HEAD")
+        self.assertIn("BASE_PARSE_ERROR", self.codes_from_result(result))
+
+        for artifact in ("decision", "rule"):
+            with self.subTest(artifact=artifact):
+                root = self.make_root()
+                if artifact == "decision":
+                    path = root / "framework/decisions.yaml"
+                else:
+                    path = root / "framework/contexts/tasks/rules/tasks.yaml"
+                records = yaml.safe_load(path.read_text(encoding="utf-8"))
+                records.append(dict(records[0]))
+                path.write_text(yaml.safe_dump(records, sort_keys=False), encoding="utf-8")
+                self.commit_root(root)
+                path.write_text(yaml.safe_dump(records[:1], sort_keys=False), encoding="utf-8")
+                result = self.run_validator(root, True, "--base", "HEAD")
+                self.assertIn("DUPLICATE_ID", self.codes_from_result(result))
+
+    def test_template_hash_exemption_requires_canonical_origin(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        root = Path(temporary.name) / "template-derived"
+        (root / "framework").mkdir(parents=True)
+        (root / "agents").mkdir()
+        for relative in ("framework/decisions.yaml", "agents/decisions.yaml"):
+            shutil.copy2(SOURCE / relative, root / relative)
+        subprocess.run(("git", "init", "-q", str(root)), check=True)
+        subprocess.run(("git", "-C", str(root), "remote", "add", "origin",
+                        "git@github.com:someone-else/aegis.git"), check=True)
+        result, codes, _ = self.codes(root)
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertIn("PROJECT_NOT_INITIALIZED", codes)
+
+        subprocess.run(("git", "-C", str(root), "remote", "set-url", "origin",
+                        "https://github.com/KoalasHut/aegis.git"), check=True)
+        result, codes, _ = self.codes(root)
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertNotIn("PROJECT_NOT_INITIALIZED", codes)
 
 
 if __name__ == "__main__":

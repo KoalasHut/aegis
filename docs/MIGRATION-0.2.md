@@ -1,8 +1,9 @@
 # Migrate an Aegis project through 0.2.x
 
-For an existing 0.2.0 project, begin with [0.2.0 to 0.2.1](#from-020-to-021).
-For 0.1.0, perform the core-preservation steps below and then apply the 0.2.1
-changes. Preserve historical decisions and project identity throughout.
+For an existing 0.2.1 project, begin with [0.2.1 to 0.2.2](#from-021-to-022).
+For 0.2.0, apply [0.2.0 to 0.2.1](#from-020-to-021) first. For 0.1.0, perform
+the core-preservation steps below and then apply both later sections. Preserve
+historical decisions and project identity throughout.
 
 ## From 0.1.0 to 0.2.0
 
@@ -179,3 +180,95 @@ Neither adopting the file nor running initialization changes branch protection.
 These are artifact and traceability checks. No domain scenario execution,
 behavioral conformance, runner/driver/matrix, workflow lanes, provisional-rule
 continuation or extraction workflow is provided by this migration.
+
+## From 0.2.1 to 0.2.2
+
+This release protects approved decisions, removes ambiguous capture behavior and
+defines stack-neutral scalar and array matching. Adopt it in a reviewed migration
+assignment. Do not rerun `init.py`: it creates new projects and is not an upgrade
+tool. Keep the original `project.json` initialization version and record the
+adopted Aegis revision in your own migration evidence.
+
+### Clean up captures
+
+Within each scenario, give every `given.steps` capture a unique name matching
+`^[a-z][a-zA-Z0-9_]*$`. Remove `as` from every setup step with `expectError`;
+failed steps have no output. Replace a bare `${name}` with a field reference such
+as `${name.task.id}` and confirm that the first selected field exists in the
+captured command's declared output. Captured values are substituted with their
+original type and are never stringified.
+
+Run validation after these edits. Duplicate names produce `DUPLICATE_CAPTURE`;
+schema and reference findings identify invalid names, failed-step captures and
+bad or forward references.
+
+### Declare and review scalar types
+
+For top-level contract input/output fields, use the recognized scalar vocabulary:
+`string`, `boolean`, `integer`, `number`, `decimal`, `date`, `datetime`, `duration`
+and `id`. Unknown scalar names warn during 0.2.x and become errors in 0.3.0, so
+resolve every warning now. Nested types remain opaque and are not recursively
+validated.
+
+Review scenario literals against their contract declarations:
+
+- Add `Z` or a numeric offset to every `datetime` expectation and input. The
+  Aegis profile accepts offset-bearing minute, second and fractional-second
+  forms. Values compare as timeline instants at the precision stated by the
+  expectation: a minute expectation covers that minute, a second expectation
+  covers that second, and a fractional expectation covers its stated fraction.
+- Keep `date` values as valid `YYYY-MM-DD` calendar dates.
+- Use the supported nonnegative ISO 8601 duration subset. Fixed units compare by
+  length (`PT120M` equals `PT2H`); calendar-unit durations compare literally.
+- Review `integer`, `number` and `decimal` fields as numeric values. Decimal
+  comparison is exact; integer and decimal representations such as `1` and `1.0`
+  can match. A string such as `"1"` is never coerced.
+- Treat `id` as an opaque string and prefer captured IDs over implementation
+  specific literals.
+
+The validator checks typed top-level literals but still does not execute a
+scenario. `INVALID_TYPED_VALUE` and `DATETIME_WITHOUT_OFFSET` are migration
+errors, not runner results.
+
+### Adopt one-to-one array matching
+
+Recheck every `$contains` and `$unordered` expectation. Each expected element
+must match a distinct actual element; one actual item cannot satisfy duplicate
+expectations. `$unordered` also consumes every actual element, while `$contains`
+allows extras. This can change the result of scenarios that relied on greedy
+matching of partially matched objects.
+
+`scripts/aegis_match.py` and its tests are the reference implementation for the
+specified recursive, typed and one-to-one behavior. They demonstrate the matching
+rules but do not call your application, execute scenarios or produce conformance
+reports.
+
+### Preserve approved decision history
+
+Fetch the reviewed base and run:
+
+```bash
+python3 scripts/validate.py --base <git-ref>
+python3 scripts/validate.py --json --strict --base <git-ref>
+```
+
+Do not edit an approved decision's question, decision, approver, date or source,
+delete its ID, or change its status except through valid supersession. To replace
+one, retain the old record with status `superseded`, add a new approved decision
+with `supersedes: <old-id>`, and move dependent rules to the new ID. Proposed
+decisions remain editable. Title or `affects` changes warn and need review.
+
+### Confirm project initialization and maintenance provenance
+
+An existing initialized project keeps its own decision logs and `project.json`.
+Never copy `D-AEGIS-*` maintenance records into a project log or cite them from a
+product rule; 0.2.2 rejects such citations. If a template copy was never
+initialized, create a disposable backup and follow the new-project initialization
+instructions rather than deleting logs manually. Exact bundled logs are replaced;
+edited or unrecognized logs block safely for owner review.
+
+Finish by reinstalling `requirements-dev.txt`, running the complete test suite,
+normal validation and strict base validation, and reviewing every warning. The
+agent protocol remains 0.1.0. Phase 3 runners, drivers, reports and matrices,
+workflow lanes, provisional-rule flow and nested contract-field validation remain
+outside this release.

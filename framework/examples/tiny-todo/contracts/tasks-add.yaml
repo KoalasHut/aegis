@@ -10,7 +10,7 @@ input:
     required: true
     description: The task title.
   dueAt:
-    type: instant
+    type: datetime
     required: false
     description: The optional due time for the task.
 output:

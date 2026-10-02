@@ -76,3 +76,18 @@
     code: CPR-005-VIOLATION
   waiver:
     allowed: false
+- id: CPR-006
+  title: Approved decisions are superseded rather than rewritten
+  level: MUST NOT
+  scope:
+  - decision
+  statement: The governed fields or approval status of an approved decision are edited in place, except to mark it superseded by a new approved decision.
+  rationale: Preserve the authority and history behind approved domain rules.
+  verification:
+    type: structural
+    automatable: true
+  failure:
+    severity: error
+    code: CPR-006-VIOLATION
+  waiver:
+    allowed: false

@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 1,
+  "name": "validator-fixture",
+  "description": "A structurally valid initialized Aegis fixture.",
+  "aegis": {"version": "0.2.2", "template": "KoalasHut/aegis"}
+}

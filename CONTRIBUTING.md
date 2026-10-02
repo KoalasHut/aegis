@@ -56,8 +56,10 @@ Validation is a structural/reference gate, not a scenario runner or approval
 authenticator. Do not claim conformance, host enforcement, automated lanes or
 provisional-rule integration from a passing validator. Those runtime/workflow
 features and legacy extraction remain deferred in 0.2.0.
-The 0.2.1 hardening release preserves these limits; its `--base` and `--strict`
-checks strengthen artifact review without executing domain scenarios.
+The 0.2.2 hardening release preserves these limits; its `--base` checks protect
+approved rules and decisions, and `--strict` strengthens artifact review without
+executing domain scenarios. `scripts/aegis_match.py` is tested reference code,
+not a conformance runner.
 
 Keep project and example validation scopes isolated. The authoritative decision
 logs are `framework/decisions.yaml`, `agents/decisions.yaml`, and each example's
@@ -70,6 +72,13 @@ deprecated and put `supersedes: <old-id>` on the new rule. Run the validator wit
 `--base` against the reviewed baseline. Review warning-only title/rationale
 clarifications as well; CI's strict mode makes warnings fail. Install all declared
 format dependencies, and retain regressions for unavailable format checkers.
+
+Approved decisions receive the same history review. Keep IDs, governed meaning
+and provenance intact; replace an approved decision by adding a new approved
+record with `supersedes` and marking the old record superseded. Title or `affects`
+clarifications warn. When maintenance decision logs change, finalize them first,
+update both exact hashes in `scripts/init.py`, and rerun initializer tests for
+fresh replacement, edited-log refusal, rollback and idempotence.
 
 Tests use disposable copies and leave the template uninitialized. For documentation
 changes, check relative links and ensure the commands match the initializer.

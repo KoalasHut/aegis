@@ -1,8 +1,9 @@
 # Starting a project
 
 Keep the core—decisions, vocabulary, domain rules and expected behavior—independent
-of the stack so it can outlive an implementation. Aegis 0.2.1 gives these artifacts
-stable references and a validator; it does not execute conformance scenarios.
+of the stack so it can outlive an implementation. Aegis 0.2.2 protects these
+artifacts and defines portable value matching; it does not execute conformance
+scenarios.
 
 Use the [README](../README.md)'s GitHub template commands for a new repository with fresh
 history. Replace `OWNER` with your account or organization. For prerequisite
@@ -33,6 +34,12 @@ is no force-overwrite option. Once initialized, project documents are yours to
 edit. Running initialization again is unnecessary. Changing `VERSION` or the
 managed README template also causes a repeat initialization to fail against
 existing output; initialization is not an upgrade mechanism.
+
+Do not skip initialization after cloning or using the GitHub template. Until it
+runs, bundled maintenance decisions remain in the project and `project.json` is
+missing. Validation warns about the missing project identity and rejects a
+project rule that cites a `D-AEGIS-*` record, because framework maintenance
+decisions cannot approve product behavior.
 
 ## Admit the first discussion
 
@@ -87,6 +94,14 @@ Expected objects match partially and arrays exactly unless an explicit matcher
 changes that behavior. See the [scenario specification](../framework/language/scenario-spec.md)
 for captures, setup errors, event scope and matching grammar. These semantics are
 structurally checked now; a future runner will execute them.
+
+Contracts select scalar comparison semantics for top-level scenario fields.
+Offset-bearing date-times compare as instants at expected precision; numbers
+compare by numeric value; strings are never coerced. `$contains` and `$unordered`
+match expected elements to distinct actual elements. Capture names are unique,
+capture references select at least one output field, and expected-error setup
+steps cannot capture output. The reference matcher is tested code for these
+rules, not scenario execution or conformance evidence.
 
 Use the full stage chain for core changes. Conformance runners/drivers, workflow
 lanes, provisional-rule flow and legacy extraction are deferred. The presence of

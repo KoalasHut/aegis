@@ -4,6 +4,7 @@ kind: command
 summary: Mark a task as complete.
 types:
   Task: A task with identity, title, position, completion state, and urgency.
+  TaskId: The opaque identity of a task.
 input:
   taskId:
     type: TaskId

@@ -33,6 +33,20 @@ catalog and is never stored.
 requires one. An `extracted` rule also requires a locator, such as a file and
 line range or an authoritative section, so that the observation is auditable.
 
+## Decision lifecycle
+
+Structured decisions begin as `proposed`. The domain owner may move a proposal
+to `approved` or `rejected`. An approved decision is authoritative and its
+`question`, `decision`, `status`, `approver`, `date`, and `source` are governed
+history. Do not edit those fields in place. To replace an approved decision,
+retain it with status `superseded`, create a new approved decision with
+`supersedes: <old-decision-id>`, and move dependent rules to the new decision.
+An approved decision may have at most one approved successor. `title` and
+`affects` remain editorial, but changing either is reported for review.
+
+Decision IDs are permanent: retain proposed, rejected, approved, and superseded
+records. Proposed decisions may be revised while discussion is active.
+
 ## Rule types
 
 | Type | Use it for | Example form |

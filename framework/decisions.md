@@ -2,8 +2,9 @@
 
 This file is narrative. [decisions.yaml](decisions.yaml) is authoritative for
 validation. OD-1 through OD-5 map to D-AEGIS-001 through D-AEGIS-005; OD-8 through
-OD-12 map to D-AEGIS-008 through D-AEGIS-012. Workflow decisions OD-6, OD-7 and
-OD-13 are in [the agents YAML log](../agents/decisions.yaml).
+OD-12 map to D-AEGIS-008 through D-AEGIS-012; OD-14 through OD-19 map to
+D-AEGIS-014 through D-AEGIS-019. Workflow decisions OD-6, OD-7, OD-13 and OD-20
+are in [the agents YAML log](../agents/decisions.yaml).
 
 These are Aegis framework decisions, not generated-project product approvals.
 Owner/issuer: Diego. Approval source, proposal digest, starting revision and
@@ -80,3 +81,26 @@ The owner also selected Tiny TODO as the primary example and retained
 core-preservation as an advanced isolated example. Scenario semantics are
 specified and validated structurally; no runner executes them in this release.
 Historical OD-1 through OD-7 approvals retain the date 2026-10-01 in YAML.
+
+## Final phase 3 hardening defaults approved for 0.2.2
+
+Diego approved OD-14 through OD-20 on 2026-10-02 using the defaults in the
+reviewed 0.2.2 plan, with an explicit Aegis-profile clarification for
+offset-bearing minute-precision date-times. The authoritative records above
+retain the approval source and plan digest.
+
+- OD-14 protects approved decision meaning and provenance. Only a valid
+  approved-to-superseded transition is allowed; title and `affects` edits warn.
+- OD-15 forbids captures on setup steps that expect errors.
+- OD-16 compares declared date-times as instants at the precision stated by the
+  expectation, including the offset-bearing minute-precision Aegis form.
+- OD-17 compares declared numeric types by numeric value, with exact decimals
+  and no string coercion.
+- OD-18 requires a distinct actual array element for every expected element
+  under `$contains` and `$unordered`.
+- OD-19 selects typed semantics from contract declarations rather than guessing
+  from value shapes; nested fields remain opaque.
+
+OD-20, the maintenance-decision guard, is summarized in the workflow narrative.
+The tested matcher is a reference implementation of these semantics, not a
+scenario runner or conformance result.

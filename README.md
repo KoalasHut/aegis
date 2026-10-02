@@ -5,9 +5,9 @@ behavior—independent of the stack, so that core can outlive any implementation
 Explicit roles, scoped assignments and reviewable handoffs carry it from the
 first problem discussion to implementation.
 
-Version 0.2.1 provides identified domain rules, structured scenarios and decisions,
-isolated project/example validation, and checks for artifact references and
-coverage. Validation does not
+Version 0.2.2 provides identified domain rules, structured scenarios and decisions,
+protected rule/decision history, unambiguous captures, contract-typed value
+semantics and checks for artifact references and coverage. Validation does not
 execute scenarios or prove an implementation conforms. A conformance runner,
 driver protocol, workflow lanes, provisional-rule flow and legacy extraction
 remain deferred. See [release notes](CHANGELOG.md) and
@@ -59,7 +59,9 @@ creates:
 Authoritative decision logs live in `framework/decisions.yaml` and
 `agents/decisions.yaml`. Initialization replaces the recognized bundled Aegis
 maintenance logs with empty project logs; modified or unrecognized logs are
-preserved as conflicts. Maintenance decisions are not product approvals. Record your own
+preserved as conflicts. **Do not skip initialization:** otherwise the bundled
+maintenance records remain in place, `project.json` is absent, and the validator
+will report project-initialization findings. Maintenance decisions are not product approvals. Record your own
 decisions with unique IDs, actual approval sources and statuses. Markdown can
 explain a decision, but does not authorize it for validation.
 
@@ -122,6 +124,12 @@ scenarios, prove behavioral conformance, authenticate approval evidence or enfor
 agent permissions. The owner must enable Actions where needed and manually make
 both checks required in branch protection. See
 [CI setup](docs/GETTING_STARTED.md#continuous-validation-on-github).
+
+Scenario matching uses contract-declared scalar types. Date-times compare as
+offset-bearing instants at expected precision, numbers by numeric value, and
+`$contains`/`$unordered` with one-to-one element assignment. The tested reference
+matcher documents these semantics for future runners; it does not execute your
+scenarios or produce conformance evidence.
 
 ## Where your work goes
 

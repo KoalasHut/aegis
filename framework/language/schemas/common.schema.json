@@ -6,6 +6,17 @@
     "ruleId": { "type": "string", "pattern": "^BR-[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-[0-9]{3}$" },
     "scenarioId": { "type": "string", "pattern": "^SC-[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-[0-9]{3}$" },
     "decisionId": { "type": "string", "pattern": "^D-[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-[0-9]{3}$" },
-    "eventRef": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9._-]*@[0-9]+$" }
+    "eventRef": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9._-]*@[0-9]+$" },
+    "scalarType": {
+      "description": "The closed Aegis scalar vocabulary for stack-neutral value comparison.",
+      "enum": ["string", "boolean", "integer", "number", "decimal", "date", "datetime", "duration", "id"]
+    },
+    "typeName": {
+      "description": "A recognized scalar type or a semantic type name. Unknown scalar-looking names remain schema-valid during the 0.2.x warning migration.",
+      "anyOf": [
+        { "$ref": "#/$defs/scalarType" },
+        { "type": "string", "minLength": 1 }
+      ]
+    }
   }
 }

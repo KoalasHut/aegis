@@ -61,7 +61,7 @@
           "additionalProperties": false,
           "properties": {
             "contract": { "type": "string", "minLength": 1 },
-            "input": { "type": "object" }
+            "input": { "$ref": "#/$defs/scenarioObject" }
           },
           "required": ["contract", "input"]
         }
@@ -82,11 +82,17 @@
       "additionalProperties": false,
       "properties": {
         "command": { "type": "string", "minLength": 1 },
-        "input": { "type": "object" },
-        "as": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_]*$" },
+        "input": { "$ref": "#/$defs/scenarioObject" },
+        "as": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9_]*$" },
         "expectError": { "type": "string", "minLength": 1 }
       },
-      "required": ["command", "input"]
+      "required": ["command", "input"],
+      "allOf": [
+        {
+          "if": { "required": ["expectError"] },
+          "then": { "not": { "required": ["as"] } }
+        }
+      ]
     },
     "advanceClockStep": {
       "type": "object",
@@ -104,7 +110,7 @@
       "additionalProperties": false,
       "properties": {
         "command": { "type": "string", "minLength": 1 },
-        "input": { "type": "object" }
+        "input": { "$ref": "#/$defs/scenarioObject" }
       },
       "required": ["command", "input"]
     },
@@ -113,7 +119,7 @@
       "additionalProperties": false,
       "properties": {
         "query": { "type": "string", "minLength": 1 },
-        "input": { "type": "object" }
+        "input": { "$ref": "#/$defs/scenarioObject" }
       },
       "required": ["query", "input"]
     },
@@ -136,7 +142,7 @@
             "additionalProperties": false,
             "properties": {
               "query": { "type": "string", "minLength": 1 },
-              "input": { "type": "object" },
+              "input": { "$ref": "#/$defs/scenarioObject" },
               "expect": { "$ref": "#/$defs/expectedObject" }
             },
             "required": ["query", "input", "expect"]
@@ -167,13 +173,38 @@
     },
     "expectedValue": {
       "oneOf": [
-        { "type": ["string", "number", "boolean", "null"] },
+        { "$ref": "#/$defs/scenarioString" },
+        { "type": ["number", "boolean", "null"] },
         {
           "type": "array",
           "items": { "$ref": "#/$defs/expectedValue" }
         },
         { "$ref": "#/$defs/regularExpectedObject" },
         { "$ref": "#/$defs/expectedMatcher" }
+      ]
+    },
+    "scenarioObject": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/scenarioValue" }
+    },
+    "scenarioValue": {
+      "oneOf": [
+        { "$ref": "#/$defs/scenarioString" },
+        { "type": ["number", "boolean", "null"] },
+        { "type": "array", "items": { "$ref": "#/$defs/scenarioValue" } },
+        { "$ref": "#/$defs/scenarioObject" }
+      ]
+    },
+    "scenarioString": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^\\$\\{[a-z][a-zA-Z0-9_]*(?:\\.[A-Za-z][A-Za-z0-9_]*)+\\}$"
+        },
+        {
+          "type": "string",
+          "not": { "pattern": "\\$\\{" }
+        }
       ]
     },
     "expectedMatcher": {

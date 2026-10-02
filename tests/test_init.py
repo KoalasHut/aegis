@@ -1,3 +1,4 @@
+import hashlib
 import json
 import importlib.util
 from pathlib import Path
@@ -40,7 +41,7 @@ class InitializationTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         metadata = json.loads((self.root / "project.json").read_text())
         self.assertEqual(metadata["name"], "sample-project")
-        self.assertEqual(metadata["aegis"]["version"], "0.2.1")
+        self.assertEqual(metadata["aegis"]["version"], "0.2.2")
         self.assertIn("NOT ADMITTED", (self.root / "docs/discussion/initial-assignment.draft.md").read_text())
         self.assertEqual((self.root / "framework/decisions.yaml").read_text(), "[]\n")
         self.assertEqual((self.root / "agents/decisions.yaml").read_text(), "[]\n")
@@ -68,6 +69,14 @@ class InitializationTests(unittest.TestCase):
         schema = json.loads((SOURCE / "framework/language/schemas/decision.schema.json").read_text())
         validator = jsonschema.Draft202012Validator(schema)
         validator.validate([])
+
+    def test_bundled_maintenance_hashes_match_the_release_logs(self):
+        spec = importlib.util.spec_from_file_location("aegis_test_init_hashes", SOURCE / "scripts/init.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        for relative, expected in module.MAINTENANCE_LOG_HASHES.items():
+            actual = hashlib.sha256((SOURCE / relative).read_bytes()).hexdigest()
+            self.assertEqual(actual, expected, relative)
 
     def test_edited_or_unrecognized_maintenance_log_is_a_preflight_collision(self):
         log = self.root / "framework/decisions.yaml"

@@ -151,6 +151,9 @@ only exactly recognized bundled maintenance logs with `[]`; modified or
 unrecognized logs block initialization without being overwritten. New project
 logs contain no product approvals. Project rules must cite approved decisions in
 their own scope. Markdown narrative and isolated examples cannot satisfy them.
+Skipping initialization leaves the maintenance logs and no `project.json`; the
+validator warns that the project is not initialized and rejects any project rule
+that cites a bundled `D-AEGIS-*` maintenance decision.
 
 Do not run initialization in the Aegis template's own maintenance checkout.
 Commit or push only when included in the user's setup request.
@@ -169,6 +172,12 @@ to make the checks required manually. Initialization does not configure branch
 protection. CI uses `--strict`, so both errors and warnings fail the artifact gate;
 ordinary local validation fails on errors only. A green
 check is not proof of behavioral conformance or genuine approval provenance.
+
+For 0.2.2 scenarios, declare top-level scalar field types in contracts and keep
+date-time expectations offset-bearing. Capture names must be unique, references
+must select a field, and expected-error setup steps cannot capture output.
+Typed matching and one-to-one array matching are specified and unit-tested in
+the reference matcher, but no scenario runner is installed.
 
 ## 5. Hand over a ready project
 

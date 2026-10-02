@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.2.2
+
+Protect approved decisions and make scenario values portable before behavioral
+conformance work begins. Agent protocol version remains 0.1.0.
+
+- Fix in-place edits to approved decisions (F-1) and removal of decision IDs
+  (F-2). `--base` now protects governed fields and retained IDs, while current
+  validation checks decision supersession graphs. CPR-006 records the rule.
+- Reject duplicate captures (F-3), captures on expected-error steps and invalid
+  or whole-output capture references (F-4). Captured values retain their types.
+- Compare declared `datetime` values as instants with expected precision (F-5),
+  declared numbers by numeric value and fixed-unit durations by length. Other
+  values stay strict; scenario literals are interpreted only through contract
+  declarations.
+- Require distinct actual elements for `$contains` and `$unordered` (F-6), using
+  one-to-one assignment in the tested reference matcher.
+- Reject product rules backed by `D-AEGIS-*` maintenance records and warn when a
+  project has not been initialized (F-7). The untouched template is recognized
+  only by exact maintenance-log hashes.
+- Define the scalar vocabulary, validate top-level typed literals, and warn on
+  unknown scalar types during 0.2.x. Nested contract fields remain opaque.
+- Record OD-14 through OD-20 and add the phase 3 readiness checklist. The matcher
+  is reference code for the specified semantics; this release still does not
+  execute scenarios or provide a runner, driver protocol, report, or matrix.
+
+See [migration notes](docs/MIGRATION-0.2.md#from-021-to-022) for capture cleanup,
+date-time offsets and precision, scalar declarations, typed literals, matching,
+decision history and project initialization.
+
 ## 0.2.1
 
 Harden artifact validation and scenario specifications before adding behavioral

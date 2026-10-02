@@ -110,3 +110,76 @@
     - framework/language/scenario-spec.md
     - framework/language/schemas/scenario.schema.json
     - framework/examples/tiny-todo/
+- id: D-AEGIS-014
+  title: "OD-14 — Approved decision immutability"
+  question: "Which decision fields become immutable after approval?"
+  decision: "Protect question, decision, approver, date and source after approval. Status may change only from approved to superseded through a valid replacement. Title and affects may change with a warning."
+  status: approved
+  approver: Diego
+  date: "2026-10-02"
+  source: "Aegis maintenance conversation, 2026-10-02; Diego granted the same authority as the prior round and approved OD-14 through OD-20 using the proposal defaults plus the documented minute-precision Aegis-profile clarification; retained by aegis-022-orchestration and aegis-022-release. Plan SHA256 19b8c6ec15e5af12faca29f6b8a44a823b4a3570ce0253d960438fbca317af4c."
+  affects:
+    - framework/constitution/rules/core-preservation.yaml
+    - framework/language/domain-rule-spec.md
+    - scripts/validate.py
+- id: D-AEGIS-015
+  title: "OD-15 — Captures on failed setup"
+  question: "Can an expected-error setup step capture output?"
+  decision: "No. A setup step with expectError has no output and must not declare as; the error code is asserted by expectError itself."
+  status: approved
+  approver: Diego
+  date: "2026-10-02"
+  source: "Aegis maintenance conversation, 2026-10-02; Diego granted the same authority as the prior round and approved OD-14 through OD-20 using the proposal defaults plus the documented minute-precision Aegis-profile clarification; retained by aegis-022-orchestration and aegis-022-release. Plan SHA256 19b8c6ec15e5af12faca29f6b8a44a823b4a3570ce0253d960438fbca317af4c."
+  affects:
+    - framework/language/scenario-spec.md
+    - framework/language/schemas/scenario.schema.json
+    - scripts/validate.py
+- id: D-AEGIS-016
+  title: "OD-16 — Date-time comparison"
+  question: "How are declared date-time values compared across stacks?"
+  decision: "Parse offset-bearing values using the Aegis RFC 3339 profile and compare instants on the timeline. The expected value defines comparison precision. The profile also accepts an offset-bearing minute-precision form, whose interval covers that minute; second and fractional forms use their stated precision."
+  status: approved
+  approver: Diego
+  date: "2026-10-02"
+  source: "Aegis maintenance conversation, 2026-10-02; Diego granted the same authority as the prior round and approved OD-14 through OD-20 using the proposal defaults plus the documented minute-precision Aegis-profile clarification; retained by aegis-022-orchestration and aegis-022-release. Plan SHA256 19b8c6ec15e5af12faca29f6b8a44a823b4a3570ce0253d960438fbca317af4c."
+  affects:
+    - framework/language/contract-spec.md
+    - framework/language/scenario-spec.md
+    - scripts/aegis_match.py
+- id: D-AEGIS-017
+  title: "OD-17 — Numeric comparison"
+  question: "How are declared numeric values compared?"
+  decision: "Compare integer, number and decimal fields by numeric value, so 1 equals 1.0. Decimal comparison uses exact decimal arithmetic. Strings are never coerced to numbers."
+  status: approved
+  approver: Diego
+  date: "2026-10-02"
+  source: "Aegis maintenance conversation, 2026-10-02; Diego granted the same authority as the prior round and approved OD-14 through OD-20 using the proposal defaults plus the documented minute-precision Aegis-profile clarification; retained by aegis-022-orchestration and aegis-022-release. Plan SHA256 19b8c6ec15e5af12faca29f6b8a44a823b4a3570ce0253d960438fbca317af4c."
+  affects:
+    - framework/language/contract-spec.md
+    - framework/language/scenario-spec.md
+    - scripts/aegis_match.py
+- id: D-AEGIS-018
+  title: "OD-18 — One-to-one array matching"
+  question: "Can one actual array element satisfy multiple expected elements?"
+  decision: "No. Each expected element under $contains and $unordered must match a distinct actual element. $unordered also requires every actual element to be used."
+  status: approved
+  approver: Diego
+  date: "2026-10-02"
+  source: "Aegis maintenance conversation, 2026-10-02; Diego granted the same authority as the prior round and approved OD-14 through OD-20 using the proposal defaults plus the documented minute-precision Aegis-profile clarification; retained by aegis-022-orchestration and aegis-022-release. Plan SHA256 19b8c6ec15e5af12faca29f6b8a44a823b4a3570ce0253d960438fbca317af4c."
+  affects:
+    - framework/language/scenario-spec.md
+    - scripts/aegis_match.py
+    - tests/test_match.py
+- id: D-AEGIS-019
+  title: "OD-19 — Contract-declared value types"
+  question: "How does validation choose typed value semantics?"
+  decision: "Choose typed parsing and comparison from the contract-declared scalar type, never from a value's shape. Top-level scenario literals are validated against those declarations; nested contract fields remain opaque."
+  status: approved
+  approver: Diego
+  date: "2026-10-02"
+  source: "Aegis maintenance conversation, 2026-10-02; Diego granted the same authority as the prior round and approved OD-14 through OD-20 using the proposal defaults plus the documented minute-precision Aegis-profile clarification; retained by aegis-022-orchestration and aegis-022-release. Plan SHA256 19b8c6ec15e5af12faca29f6b8a44a823b4a3570ce0253d960438fbca317af4c."
+  affects:
+    - framework/language/schemas/common.schema.json
+    - framework/language/schemas/contract.schema.json
+    - framework/language/contract-spec.md
+    - scripts/validate.py

@@ -2,7 +2,8 @@
 
 This file is narrative. [decisions.yaml](decisions.yaml) is authoritative for
 validation; approval status and provenance are not inferred from Markdown.
-OD-6, OD-7 and OD-13 map to D-AEGIS-006, D-AEGIS-007 and D-AEGIS-013 here.
+OD-6, OD-7, OD-13 and OD-20 map to D-AEGIS-006, D-AEGIS-007, D-AEGIS-013 and
+D-AEGIS-020 here.
 Other owner defaults are in [the framework YAML log](../framework/decisions.yaml).
 
 Aegis framework maintenance decisions follow. They define the reusable framework;
@@ -64,3 +65,20 @@ checks manually. It is an artifact gate, not behavioral conformance evidence.
 Release 0.2.1 hardens the 0.2.0 milestone without changing agent protocol 0.1.0
 or activating workflow lanes. Historical OD-1 through OD-7 approvals are dated
 2026-10-01; their migration to YAML does not create new product approvals.
+
+## Aegis 0.2.2 hardening provenance and OD-20
+
+Diego approved OD-14 through OD-20 on 2026-10-02 in the current maintenance
+conversation, captured by `aegis-022-orchestration` and release assignment
+`aegis-022-release`. The reviewed plan SHA-256 is
+`19b8c6ec15e5af12faca29f6b8a44a823b4a3570ce0253d960438fbca317af4c`, against
+starting revision `6241d6c01080d2b08181725042449ce703d6aef6`. The owner accepted
+the proposed defaults plus the documented minute-precision Aegis-profile
+clarification.
+
+OD-20 prevents bundled `D-AEGIS-*` maintenance records from serving as product
+approval: project-scope rules citing them fail validation. A project without
+`project.json` warns, while the untouched template is recognized only by the
+exact maintenance-log hashes used by `init.py`. OD-14 through OD-19 are summarized
+in [framework decisions](../framework/decisions.md). Release 0.2.2 leaves agent
+protocol 0.1.0 and the existing full stage chain unchanged.

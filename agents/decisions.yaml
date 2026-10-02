@@ -33,3 +33,15 @@
     - .github/workflows/validate.yml
     - docs/GETTING_STARTED.md
     - CONTRIBUTING.md
+- id: D-AEGIS-020
+  title: "OD-20 — Maintenance-decision guard"
+  question: "Can bundled Aegis maintenance decisions approve project behavior?"
+  decision: "No. A project-scope domain rule that cites a D-AEGIS-* decision is an error. A missing project.json produces a warning, except in the untouched Aegis template recognized by the exact bundled maintenance-log hashes."
+  status: approved
+  approver: Diego
+  date: "2026-10-02"
+  source: "Aegis maintenance conversation, 2026-10-02; Diego granted the same authority as the prior round and approved OD-14 through OD-20 using the proposal defaults plus the documented minute-precision Aegis-profile clarification; retained by aegis-022-orchestration and aegis-022-release. Plan SHA256 19b8c6ec15e5af12faca29f6b8a44a823b4a3570ce0253d960438fbca317af4c."
+  affects:
+    - scripts/init.py
+    - scripts/validate.py
+    - README.md
