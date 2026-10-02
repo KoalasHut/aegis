@@ -1,0 +1,9 @@
+- id: BR-TASKS-001
+  title: A task has a title
+  statement: A recorded task has a meaningful title.
+  type: invariant
+  status: approved
+  owner: task steward
+  decision: D-TASKS-404
+  rationale: A task without a title cannot be identified by its owner.
+  verification: automated

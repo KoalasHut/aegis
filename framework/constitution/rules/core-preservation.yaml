@@ -1,0 +1,78 @@
+- id: CPR-001
+  title: Blocks enforce identified domain rules
+  level: MUST
+  scope:
+  - block
+  - concept-pack
+  statement: Every business rule enforced by a block is a domain rule with an ID.
+  rationale: Preserve business behavior as a context-owned, versioned asset.
+  verification:
+    type: structural
+    automatable: true
+  failure:
+    severity: error
+    code: CPR-001-VIOLATION
+  waiver:
+    allowed: false
+- id: CPR-002
+  title: Context vocabulary and rules remain implementation-neutral
+  level: MUST
+  scope:
+  - context
+  - domain-rule
+  statement: Domain rules and glossary contain no platform, language, framework, or storage terms unless a constraint source makes the term intrinsic.
+  rationale: Keep the core usable across implementation rewrites.
+  verification:
+    type: semantic
+    automatable: false
+  failure:
+    severity: error
+    code: CPR-002-VIOLATION
+  waiver:
+    allowed: false
+- id: CPR-003
+  title: Approved domain rules cite their decision
+  level: MUST
+  scope:
+  - domain-rule
+  statement: An approved domain rule references its approving decision.
+  rationale: Make owner approval and the reason for the rule auditable.
+  verification:
+    type: structural
+    automatable: true
+  failure:
+    severity: error
+    code: CPR-003-VIOLATION
+  waiver:
+    allowed: false
+- id: CPR-004
+  title: Approved rule statements are superseded rather than rewritten
+  level: MUST NOT
+  scope:
+  - domain-rule
+  statement: The statement of an approved domain rule is edited in place.
+  rationale: Preserve the meaning and history that an implementation must conform to.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: error
+    code: CPR-004-VIOLATION
+  waiver:
+    allowed: false
+- id: CPR-005
+  title: Approved automated rules have scenario coverage
+  level: SHOULD
+  scope:
+  - domain-rule
+  - scenario
+  statement: Every approved domain rule with automated verification has at least one scenario.
+  rationale: Make the most important executable behavior visible and checkable.
+  verification:
+    type: structural
+    automatable: true
+  failure:
+    severity: warning
+    code: CPR-005-VIOLATION
+  waiver:
+    allowed: false

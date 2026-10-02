@@ -1,5 +1,9 @@
 # Starting a project
 
+Keep the core—decisions, vocabulary, domain rules and expected behavior—independent
+of the stack so it can outlive an implementation. Aegis 0.2.0 gives these artifacts
+stable references and a validator; it does not execute conformance scenarios.
+
 Use the [README](../README.md)'s GitHub template commands for a new repository with fresh
 history. Replace `OWNER` with your account or organization. For prerequisite
 checks and tool installation, follow [INSTALL.md](../INSTALL.md).
@@ -33,8 +37,11 @@ existing output; initialization is not an upgrade mechanism.
 ## Admit the first discussion
 
 1. Read `AGENTS.md`, `agents/doctrine.md`, and `agents/stage-contracts.md`.
-2. Fill in `docs/discussion/initial-brief.md`, keeping proposals separate from
-   approved decisions and retaining approval provenance.
+2. Fill in `docs/discussion/initial-brief.md`: Problem, Who and when, Desired
+   outcome, Signals of success and Evidence come before alternatives and proposals.
+   Separate symptoms from causes and cite observations or mark evidence missing.
+   Propose candidate domain rules and plain-language scenarios before committing
+   to features; retain approval provenance separately.
 3. Use `docs/discussion/initial-assignment.draft.md` as a worksheet. A domain owner
    and dispatcher must provide a real assignment, exact input revisions, scoped
    paths/effects, authority, and a bounded work window under the assignment schema.
@@ -43,8 +50,39 @@ existing output; initialization is not an upgrade mechanism.
 5. Admit the discussion role and close its work with a handoff. Completion does
    not authorize the next stage.
 
+An explicitly assigned throwaway prototype or mockup can help answer a question.
+Record the question and resulting decision in the brief; prototype behavior does
+not approve semantics and is never implementation precedent. Candidate rules
+stay in the brief until architect consolidation. The owner then reviews glossary,
+domain rules and scenarios; the architect checks technical artifacts against them.
+
+## Validate the core
+
+Initialization requires no third-party Python packages. The validator and full
+development tests require the dependencies declared in `requirements-dev.txt`:
+
+```bash
+python3 -m venv .venv
+. .venv/bin/activate
+python3 -m pip install -r requirements-dev.txt
+python3 scripts/validate.py
+python3 -m unittest discover -s tests -v
+```
+
+On Windows, use `.venv\Scripts\Activate.ps1` in PowerShell to activate. Run
+`python3 scripts/validate.py --json` for machine-readable results. Correct errors
+and review warnings. A successful check proves neither implemented behavior nor
+authenticity of approvals; retain independent review and implementation evidence.
+
+Use the full stage chain for core changes. Conformance runners/drivers, workflow
+lanes, provisional-rule flow and legacy extraction are deferred. The presence of
+a proposed or provisional rule status does not authorize execution to invent
+missing business semantics. Existing doctrine and stage contracts still apply.
+
 ## Framework updates
 
 `project.json` records the Aegis version used to start your project. Template
 updates are not applied automatically; review and adopt future changes explicitly.
+For an existing 0.1.0 project, use the [manual migration guide](MIGRATION-0.2.md)
+instead of rerunning initialization.
 For developing or publishing Aegis itself, see [the maintainer guide](../CONTRIBUTING.md).

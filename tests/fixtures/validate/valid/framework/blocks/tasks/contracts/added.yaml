@@ -1,0 +1,15 @@
+id: tasks.added
+version: 1.0.0
+kind: event
+summary: A task was recorded.
+types:
+  Task: A task with a meaningful title.
+input:
+  item:
+    type: Task
+    required: true
+    description: The recorded task.
+output: {}
+errors: []
+semantics:
+  - The event records a completed task action.

@@ -31,7 +31,71 @@ def initialize(root, name, description, dry_run=False):
     template = checked(root, "docs/PROJECT_README.template.md").read_text()
     metadata = {"schemaVersion": 1, "name": name, "description": description,
                 "aegis": {"version": version, "template": "KoalasHut/aegis"}}
-    brief = f"""# {name}: initial discussion brief\n\nStatus: DRAFT — no decisions or approvals recorded.\n\n## Intent\n\n{description or 'To be supplied by the domain owner.'}\n\n## Alternatives\n\nTo be discussed.\n\n## Approved decisions and provenance\n\nNone.\n\n## Proposals\n\nTo be discussed.\n\n## Open questions\n\n- Who is the domain owner?\n- What problem, users, constraints, and acceptance outcomes define this project?\n\n## Non-goals\n\nTo be agreed. This draft authorizes no implementation.\n"""
+    brief = f"""# {name}: initial discussion brief
+
+Status: DRAFT — no decisions or approvals recorded.
+
+## Problem
+
+Starting description: {description or 'To be supplied by the domain owner.'}
+
+Restate the problem in the owner's words. Separate observed symptoms from
+possible causes; a feature request or stack choice is not yet the problem.
+
+## Who and when
+
+Who experiences it, in what context, and when? To be discussed.
+
+## Desired outcome
+
+What changes for those people if the problem is solved? To be discussed.
+
+## Signals of success
+
+What observable change would show improvement? To be agreed.
+
+## Evidence
+
+No evidence recorded yet. Cite observations and sources; label assumptions.
+
+## Alternatives
+
+Compare approaches, including a process change or doing nothing, before features.
+
+## Proposals
+
+### Candidate domain rules (status: proposed)
+
+To be discussed; keep candidates here until owner review and consolidation.
+
+### Candidate scenarios (plain language)
+
+To be discussed; describe situations and expected outcomes without stack choices.
+
+### Possible features
+
+Consider only after the problem, alternatives, candidate rules and scenarios.
+No feature commitment is implied by this draft.
+
+## Approved decisions and provenance
+
+None. Record the owner, approval source and reviewed revision for each decision.
+
+## Open questions
+
+- Who is the domain owner?
+- Which evidence and mandatory behavior decisions are still missing?
+
+## Question tools
+
+Explicitly assigned throwaway prototypes or mockups may be question tools.
+Record the question, findings and resulting decision here. Their behavior is
+never implementation precedent or implicit approval.
+
+## Non-goals
+
+To be agreed. This draft authorizes no implementation.
+"""
     assignment = f"""# Initial discussion assignment — DRAFT\n\nProject: {name}\nProposed role: discussion\nAdmission status: NOT ADMITTED\nApproval source: none\nWork window: not opened\n\nThis is a preparation worksheet, not an executable assignment. The domain owner\nand dispatcher must supply and validate authority before any agent starts work.\n\n## Required admission details\n\n- Assignment ID, issuer, and verifiable approval source.\n- Exact input revisions/digests, including the initial brief and applicable controls.\n- Named read/write paths, permitted effects, and explicit non-goals.\n- Expected discussion output, recipient, and work-window boundaries.\n- Host controls; acknowledge instruction-only operation if using a supervised pilot.\n\nUse `agents/contracts/assignment.schema.json` and `agents/stage-contracts.md`\nto prepare the admitted record. Proposed input: `docs/discussion/initial-brief.md`.\nNo approval, delegation, installation, or downstream execution is implied.\n"""
     outputs = {
         "project.json": json.dumps(metadata, indent=2, ensure_ascii=False) + "\n",

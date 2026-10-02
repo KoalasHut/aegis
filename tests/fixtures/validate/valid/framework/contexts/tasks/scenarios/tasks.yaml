@@ -1,0 +1,16 @@
+- id: SC-TASKS-001
+  title: A titled task is recorded
+  exercises: [BR-TASKS-001]
+  verification: automated
+  given:
+    commands: []
+  when:
+    command: tasks.add
+    input: { title: Write a note }
+  then:
+    output: { item: { title: Write a note } }
+    events: [tasks.added@1]
+    observe:
+      - query: tasks.list
+        input: {}
+        expect: { items: [{ title: Write a note }] }

@@ -1,0 +1,8 @@
+- id: BR-TASKS-002
+  title: A retired task rule
+  statement: A retired task rule records past behavior.
+  type: policy
+  status: deprecated
+  owner: task steward
+  rationale: The retired rule remains identifiable for historical references.
+  verification: manual

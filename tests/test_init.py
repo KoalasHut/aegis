@@ -36,7 +36,7 @@ class InitializationTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         metadata = json.loads((self.root / "project.json").read_text())
         self.assertEqual(metadata["name"], "sample-project")
-        self.assertEqual(metadata["aegis"]["version"], "0.1.0")
+        self.assertEqual(metadata["aegis"]["version"], "0.2.0")
         self.assertIn("NOT ADMITTED", (self.root / "docs/discussion/initial-assignment.draft.md").read_text())
         self.assertEqual(before, (self.root / "README.md").read_bytes())
         snapshot = self.snapshot()
@@ -50,6 +50,30 @@ class InitializationTests(unittest.TestCase):
         self.assertEqual(self.run_init("--dry-run").returncode, 0)
         self.assertEqual(before, self.snapshot())
         self.assertFalse((self.root / "docs/discussion").exists())
+
+    def test_brief_starts_with_problem_and_preserves_proposal_status(self):
+        result = self.run_init("--description", "People lose track of follow-up work")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        brief = (self.root / "docs/discussion/initial-brief.md").read_text()
+        sections = ["## Problem", "## Who and when", "## Desired outcome",
+                    "## Signals of success", "## Evidence", "## Alternatives",
+                    "## Proposals"]
+        positions = [brief.index(section) for section in sections]
+        self.assertEqual(positions, sorted(positions))
+        self.assertIn("People lose track of follow-up work", brief)
+        self.assertIn("Candidate domain rules (status: proposed)", brief)
+        self.assertIn("Candidate scenarios (plain language)", brief)
+        self.assertIn("no decisions or approvals recorded", brief)
+        self.assertIn("question tools", brief)
+        self.assertIn("never implementation precedent", brief)
+
+    def test_upgrade_does_not_overwrite_existing_project_documents(self):
+        self.assertEqual(self.run_init().returncode, 0)
+        (self.root / "VERSION").write_text("0.3.0\n")
+        before = self.snapshot()
+        result = self.run_init()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(before, self.snapshot())
 
     def test_configuration_change_is_non_destructive(self):
         self.assertEqual(self.run_init().returncode, 0)

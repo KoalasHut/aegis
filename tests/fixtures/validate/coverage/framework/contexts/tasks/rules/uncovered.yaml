@@ -1,0 +1,9 @@
+- id: BR-TASKS-002
+  title: A task has an owner
+  statement: A recorded task identifies its owner.
+  type: policy
+  status: approved
+  owner: task steward
+  decision: D-TASKS-001
+  rationale: Ownership makes follow-up possible.
+  verification: automated

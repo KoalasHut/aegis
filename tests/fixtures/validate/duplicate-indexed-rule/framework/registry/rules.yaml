@@ -1,0 +1,8 @@
+- id: BR-TASKS-001
+  context: tasks
+  status: approved
+  path: contexts/tasks/rules/tasks.yaml
+- id: BR-TASKS-001
+  context: tasks
+  status: approved
+  path: contexts/tasks/rules/tasks.yaml

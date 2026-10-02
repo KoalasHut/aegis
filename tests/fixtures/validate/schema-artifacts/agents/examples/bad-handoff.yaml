@@ -1,0 +1,5 @@
+protocolVersion: 0.1.0
+assignmentId: example
+role: executor
+outcome: COMPLETED
+windowClosed: true

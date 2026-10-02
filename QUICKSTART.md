@@ -1,11 +1,15 @@
 # Build a TODO app with Aegis
 
-Everybody needs somewhere to put “build a TODO app.” Let's make one.
+Keep the core of a TODO project useful even when its stack changes. Start with
+the problem, then capture vocabulary, domain rules and expected behavior before
+choosing implementation details.
 
 This walkthrough takes a small app from an idea to reviewed implementation.
 You'll act as project owner and manually route work between agent sessions.
 The example prompts describe tasks; they are not preapproved assignments or
-an automatic pipeline. No TODO application is bundled with Aegis.
+an automatic pipeline. No TODO application is bundled with Aegis. Version 0.2.0
+validates rule/scenario artifacts; it does not include a conformance runner or
+driver, lane shortcuts, provisional-rule flow or legacy extraction.
 
 ## 1. Start your project
 
@@ -22,7 +26,7 @@ python3 scripts/init.py --name tiny-todo --description "A small personal TODO ap
 Use `--public` if you want your app repository public. Open the new folder in your
 AI coding tool. Work in this project copy, not the Aegis template checkout.
 
-## 2. Describe the idea
+## 2. Describe the problem
 
 Put the following in `docs/discussion/initial-brief.md` as your starting proposal:
 
@@ -31,21 +35,47 @@ Put the following in `docs/discussion/initial-brief.md` as your starting proposa
 
 Status: proposal for discussion; no approved product decisions yet.
 
-## Intent
-A single person can keep track of tasks in a small browser app.
+## Problem
+"I lose track of small commitments when I switch between activities."
+Scattered reminders are an observed symptom; the cause still needs discussion.
 
-## Proposed first version
-- Add a task with a title.
-- View tasks in creation order, newest last.
-- Mark a task complete or active again.
-- Delete a task.
-- Filter by all, active, or completed tasks.
-- Keep tasks after refreshing the page.
+## Who and when
+One person, returning to personal follow-up work after an interruption.
 
-## Proposed boundaries
-- No accounts, shared lists, due dates, or backend.
-- One browser on one device; no synchronization between tabs or devices.
-- Use ordinary HTML, CSS, and JavaScript for this learning project.
+## Desired outcome
+They can recover what remains to be done and trust that completion is remembered.
+
+## Signals of success
+After an interruption, they can identify the next unfinished commitment without
+reconstructing the list from memory. Agree how to observe this with the owner.
+
+## Evidence
+This is a fictional teaching example, not user research. In a real project,
+record actual observations and their sources; label untested assumptions.
+
+## Alternatives
+A paper list, a habit of reviewing notes, or a small digital list. Compare these
+against the desired outcome before choosing an app.
+
+## Proposals
+Candidate domain rules (all proposed, not approved):
+- A task needs a nonblank title so the commitment can be recognized.
+- Completing a task preserves its identity and title.
+- A saved task remains available when the person returns.
+
+Candidate scenarios in plain language:
+- Given no tasks, adding a whitespace-only title returns an error and adds none.
+- Given an active task, completing and reopening it preserves its title.
+- Given a saved task, leaving and returning still shows that task.
+
+Possible features, only after reviewing the problem and alternatives:
+- Add, list, complete, reopen, delete and filter tasks.
+- Preserve saved tasks across sessions.
+
+## Proposed boundaries and technology preference
+- No accounts, shared lists, due dates or synchronization in the first version.
+- If a browser app is chosen, use ordinary HTML, CSS and JavaScript for learning.
+- This stack preference is an implementation constraint, not a domain rule.
 
 ## Questions to resolve
 - What happens to blank or whitespace-only titles?
@@ -64,9 +94,12 @@ Start a fresh **discussion** session. Use
 `docs/discussion/initial-assignment.draft.md` to prepare its assignment. A useful
 task description is:
 
-> Discuss Tiny TODO using the initial brief. Resolve the listed behavior questions
-> with me, identify alternatives and explicit non-goals, and return a decision
-> brief inline. Separate my approved decisions from your proposals. This window
+> Discuss Tiny TODO using the initial brief. Restate the problem in my words,
+> distinguish symptoms from possible causes, identify who experiences it and when,
+> and agree the desired outcome, success signals and evidence. Explore alternatives
+> before features; propose candidate domain rules and plain-language scenarios in
+> the brief. Resolve the behavior questions with me and record explicit non-goals.
+> Return the decision brief inline, separating approvals from proposals. This window
 > ends with your discussion handoff; do not write implementation files.
 
 For each session in this guide, you or your dispatcher must fill in the
@@ -77,6 +110,11 @@ assignment before writes or delegation. The
 [session prompt](agents/adapters/codex/session-prompt.md) shows how to load it.
 Use only the current role and its inputs. A role change gets a fresh assignment
 and session.
+
+If a mockup would settle a question, scope it explicitly as a throwaway question
+tool. For example, compare how people recover unfinished work from two sketches.
+Record the question, observations and resulting owner decision in the brief.
+Neither the sketch nor observed prototype behavior becomes an approved contract.
 
 For this walkthrough, you might decide:
 
@@ -99,18 +137,23 @@ returns to discussion before dependent work proceeds.
 Assign an **architect** the approved brief and applicable framework rules:
 
 > Consolidate Tiny TODO into a task-management context and the Concept Packs
-> needed for adding, listing, completing, deleting, and filtering tasks. Specify
-> state, inputs, outputs, errors, persistence boundaries, invariants, and acceptance
-> scenarios. Use the approved decisions; return unresolved semantics to discussion.
+> needed for the approved capabilities. Create the glossary, themed domain-rule
+> YAML with stable BR-TASKS-NNN IDs, and context-owned structured scenarios with
+> SC-TASKS-NNN IDs. Reference approving decisions for approved rules and map block
+> contracts to the rule/scenario IDs. Specify inputs, outputs, errors, state and
+> effects at the public boundary. Return unresolved semantics to discussion.
 > Produce an implementation handoff for the planner.
 
 Give this assignment explicit write scope for the selected context, capability
 packs, and affected registries under `framework/`. The
 [block templates](framework/templates/block/concept.md) provide a starting point.
-The architect chooses an appropriate decomposition; five UI actions need not
-mean five independent implementation modules.
+Use the context templates under `framework/templates/context/` for vocabulary,
+rules and scenarios. The architect chooses an appropriate decomposition; five
+UI actions need not mean five independent implementation modules.
 
-Review the contracts and scenarios. For example, the agreed behavior should be
+The owner reviews glossary, domain rules and scenarios; the architect checks
+manifests, impact and ports against those owner-facing artifacts. For example,
+the agreed behavior should be
 checkable as:
 
 | Scenario | Expected result |
@@ -125,7 +168,22 @@ checkable as:
 | Stored data is invalid | Recovery feedback appears; no automatic overwrite |
 
 These are proposed acceptance scenarios until reviewed. They belong in the
-project's versioned contracts, not just in this tutorial.
+project's versioned core, not just in this tutorial. Express structured scenarios
+through public commands/queries and expected results, never storage inspection or
+UI selectors. Browser feedback and layout checks remain implementation evidence.
+
+Install validation dependencies in a virtual environment and check the artifacts:
+
+```bash
+python3 -m venv .venv
+. .venv/bin/activate
+python3 -m pip install -r requirements-dev.txt
+python3 scripts/validate.py
+```
+
+Use `.venv\Scripts\Activate.ps1` in Windows PowerShell. Correct errors and review
+warnings, including automated rules without scenario coverage. A successful
+validation checks artifacts; no scenario has been executed by this command.
 
 ## 5. Plan the work
 
@@ -134,7 +192,7 @@ Use two separate sessions, with a reviewed handoff between them.
 **Planner — what must be delivered:**
 
 > Derive a generic backlog from the approved Tiny TODO contract revisions. Assign
-> obligation IDs, map every acceptance scenario, record dependencies, and define
+> obligation IDs, map the approved BR-/SC- IDs, record dependencies, and define
 > completion evidence. Preserve error and persistence behavior as explicit work.
 
 **Implementation planner — how to deliver it in this project:**
@@ -202,3 +260,7 @@ it does not automatically approve a commit, deployment, or the next feature.
 
 Want due dates next? Open a new discussion assignment with that change request.
 Aegis gives the new work the same path from a decision to verified behavior.
+Keep using the full chain: an implementation lane and provisional-rule round trip
+are deferred, so uncovered mandatory business behavior still returns for a decision
+before dependent work proceeds. A future conformance runner will execute shared
+scenarios across stacks; this milestone does not claim that evidence exists.

@@ -223,6 +223,45 @@
       ],
       "additionalProperties": false
     },
+    "rules": {
+      "type": "object",
+      "properties": {
+        "enforces": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^BR-[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-[0-9]{3}$"
+          },
+          "uniqueItems": true
+        },
+        "observes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^BR-[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-[0-9]{3}$"
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": ["enforces", "observes"],
+      "additionalProperties": false
+    },
+    "scenarios": {
+      "type": "object",
+      "description": "Context-owned scenarios that cover this block.",
+      "properties": {
+        "covers": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^SC-[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*-[0-9]{3}$"
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": ["covers"],
+      "additionalProperties": false
+    },
     "patterns": {
       "type": "object",
       "properties": {
@@ -298,6 +337,8 @@
     "effects",
     "permissions",
     "events",
+    "rules",
+    "scenarios",
     "patterns",
     "compatibility"
   ],

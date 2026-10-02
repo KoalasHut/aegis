@@ -1,0 +1,21 @@
+# Case-insensitive words that need a stack-neutrality review in rules and scenarios.
+# Add project-specific terms here, one literal word or phrase per line.
+sql
+rest
+react
+kotlin
+swift
+typescript
+python
+database
+table
+endpoint
+cache
+http
+api
+graphql
+screen
+button
+widget
+postgres
+mongodb

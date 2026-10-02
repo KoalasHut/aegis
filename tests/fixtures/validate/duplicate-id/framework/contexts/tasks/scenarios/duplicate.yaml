@@ -1,0 +1,7 @@
+- id: SC-TASKS-001
+  title: A duplicate scenario identifier
+  exercises: [BR-TASKS-001]
+  verification: automated
+  given: { commands: [] }
+  when: { command: tasks.add, input: { title: Second } }
+  then: { output: { item: { title: Second } } }

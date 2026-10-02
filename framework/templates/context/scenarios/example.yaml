@@ -1,0 +1,12 @@
+# TEMPLATE ONLY — copy, complete, and move under framework/contexts/<context>/scenarios/.
+- id: SC-EXAMPLE-001
+  title: TODO describe observable business behavior
+  exercises: [BR-EXAMPLE-001]
+  verification: automated
+  given:
+    commands: []
+  when:
+    command: example.perform
+    input: {}
+  then:
+    output: {}

@@ -1,0 +1,15 @@
+id: tasks.list
+version: 1.0.0
+kind: query
+summary: List tasks.
+types:
+  Task: A task with a meaningful title.
+input: {}
+output:
+  items:
+    type: Task[]
+    required: true
+    description: Recorded tasks.
+errors: []
+semantics:
+  - Listing tasks does not change them.

@@ -1,0 +1,2 @@
+- id: tasks.add.block
+  scenarios: [SC-TASKS-404]

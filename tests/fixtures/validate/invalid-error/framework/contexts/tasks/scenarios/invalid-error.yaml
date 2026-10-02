@@ -1,0 +1,7 @@
+- id: SC-TASKS-002
+  title: An undeclared failure is expected
+  exercises: [BR-TASKS-001]
+  verification: automated
+  given: { commands: [] }
+  when: { command: tasks.add, input: {} }
+  then: { error: TASK_ARCHIVED }

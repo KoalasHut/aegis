@@ -1,21 +1,25 @@
 protocolVersion: 0.1.0
 role: discussion
-purpose: Challenge intent with the user and produce an explicit decision brief.
+purpose: Identify the problem and desired outcome with the user before proposing features.
 requiredInputs:
 - User intent
 - Relevant concepts and prior decisions
 requiredOutputs:
-- Decision brief with approval provenance, proposals and open questions
+- Problem-first brief with people/context, desired outcome, success signals and evidence
+- Candidate domain rules and plain-language scenarios with approval provenance and open questions
 allowedActions:
 - Read assigned context
 - Research relevant alternatives
 - Discuss tradeoffs
+- Record proposed domain rules and scenarios in the assigned brief only
+- Use an explicitly assigned throwaway prototype or mockup as a question tool only
 - Return an inline brief or write an explicitly assigned discussion artifact
 prohibitedActions:
 - Modify contracts or runtime code
 - Create an implementation backlog
 - Dispatch implementation
 - Treat silence as approval
+- Treat prototype behavior as approved semantics or implementation precedent
 readBoundary:
 - Assigned context and approved research sources
 writeBoundary:

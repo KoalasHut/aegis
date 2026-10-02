@@ -1,0 +1,30 @@
+# Changelog
+
+## 0.2.0
+
+Core-preservation milestone: keep decisions, domain rules, vocabulary and expected
+behavior independent of implementation technology.
+
+- Add identified domain rules, five rule types, context templates, rule registry
+  and core-preservation constitution rules CPR-001 through CPR-005.
+- Add structured context-owned scenarios, rule/scenario references from packs,
+  and owner review of rules, scenarios and glossary.
+- Add a Python validator for artifact structure, references, ID integrity and
+  coverage, with human and JSON output and development dependencies.
+- Make discussion and generated briefs problem-first: people/context, desired
+  outcome, success signals and evidence before alternatives, candidate rules,
+  scenarios and feature commitment.
+- Record owner defaults OD-1 through OD-7 and provide
+  [manual migration from 0.1.0](docs/MIGRATION-0.2.md).
+
+This delivers phases 1 and 2 plus task 4.1 of the approved improvement milestone.
+Scenario execution, conformance drivers/reports/matrix, workflow lanes,
+provisional-rule reverse flow and legacy extraction remain deferred. A passing
+validator is not runtime conformance evidence. Agent protocol version remains
+0.1.0; initialization remains dependency-free and does not upgrade existing projects.
+
+## 0.1.0
+
+Initial reusable starter: scoped six-stage workflow, role and handoff contracts,
+Concept Pack templates, optional uninstalled Codex candidates, and conservative
+project initialization with onboarding guides.

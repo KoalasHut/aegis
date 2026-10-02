@@ -1,0 +1,7 @@
+- id: SC-TASKS-002
+  title: An unknown command is attempted
+  exercises: [BR-TASKS-001]
+  verification: automated
+  given: { commands: [] }
+  when: { command: tasks.archive, input: {} }
+  then: { output: {} }

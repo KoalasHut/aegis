@@ -26,6 +26,13 @@ permissions:
 events:
   emits: []
   consumes: []
+rules:
+  # Canonical rule statements live in the owning context's rules/ directory.
+  enforces: []
+  observes: []
+scenarios:
+  # Canonical scenarios live in the owning context's scenarios/ directory.
+  covers: []
 patterns:
   required: []
   expected: []

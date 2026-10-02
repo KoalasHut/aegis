@@ -1,0 +1,7 @@
+- id: SC-TASKS-002
+  title: An unknown rule is exercised
+  exercises: [BR-TASKS-404]
+  verification: automated
+  given: { commands: [] }
+  when: { command: tasks.add, input: { title: Unknown } }
+  then: { output: { item: { title: Unknown } } }

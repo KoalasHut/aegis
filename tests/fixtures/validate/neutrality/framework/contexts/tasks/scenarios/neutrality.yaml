@@ -1,0 +1,7 @@
+- id: SC-TASKS-002
+  title: The REST endpoint records a task
+  exercises: [BR-TASKS-001]
+  verification: automated
+  given: { commands: [] }
+  when: { command: tasks.add, input: { title: Neutral operation } }
+  then: { output: { item: { title: Neutral operation } } }

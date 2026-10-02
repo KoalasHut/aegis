@@ -7,6 +7,7 @@ requiredInputs:
 - Named packs and direct dependency contracts
 requiredOutputs:
 - Concept Packs and contract change record
+- Owner-facing context glossary, domain rules, and scenarios with approval provenance
 - Validation and impact report
 - Versioned implementation handoff
 allowedActions:
@@ -20,9 +21,9 @@ prohibitedActions:
 - Produce an implementation task backlog
 - Invent missing mandatory semantics
 readBoundary:
-- Assigned framework rules, packs and direct contracts
+- Assigned framework rules, packs, contexts, scenarios and direct contracts
 writeBoundary:
-- Named framework packs/context/change documents
+- Named framework packs, context glossary/rules/scenarios and change documents
 - Registries or archives only if explicitly assigned
 delegation: none
 completionDestination: planner

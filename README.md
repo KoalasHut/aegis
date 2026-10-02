@@ -1,7 +1,16 @@
 # Aegis
 
-Aegis helps you build projects with AI through explicit roles, scoped assignments,
-and reviewable handoffs—from the first discussion to implementation.
+Aegis keeps a project's core—its decisions, domain rules, vocabulary and expected
+behavior—independent of the stack, so that core can outlive any implementation.
+Explicit roles, scoped assignments and reviewable handoffs carry it from the
+first problem discussion to implementation.
+
+Version 0.2.0 adds identified domain rules, structured scenarios and a Python
+validator for artifact structure, references and coverage. Validation does not
+execute scenarios or prove an implementation conforms. A conformance runner,
+driver protocol, workflow lanes, provisional-rule flow and legacy extraction
+remain deferred. See [release notes](CHANGELOG.md) and
+[migration from 0.1.0](docs/MIGRATION-0.2.md).
 
 **Learn by building:** follow the [TODO app quickstart](QUICKSTART.md) for a
 worked example with prompts, decisions, and expected outputs at every stage.
@@ -58,6 +67,11 @@ As project owner, approve the assignment and have it checked against the
 is not approval. See the [first-discussion guide](docs/GETTING_STARTED.md#admit-the-first-discussion)
 for the admission checklist.
 
+Begin with the problem, who experiences it and when, the desired outcome,
+signals of success and supporting evidence. Explore alternatives, candidate
+rules and scenarios before committing to features. An explicitly assigned
+throwaway mockup can answer a question; its behavior does not approve a rule.
+
 Aegis guides the project through:
 
 **Discuss → Consolidate → Plan → Plan specific → Orchestrate specific → Execute specific**
@@ -67,12 +81,31 @@ provide the workflow; your tool's permissions provide actual access controls.
 Optional [adapter instructions](agents/adapters/codex/README.md) describe separate
 host setup; initialization does not install agents or a dispatcher.
 
+## Validate the core
+
+Initialization needs only Python's standard library. The validator and full
+development test suite also need the packages in `requirements-dev.txt`:
+
+```bash
+python3 -m venv .venv
+. .venv/bin/activate
+python3 -m pip install -r requirements-dev.txt
+python3 scripts/validate.py
+python3 scripts/validate.py --json
+```
+
+On Windows, activate with `.venv\Scripts\Activate.ps1` in PowerShell. Resolve
+validation errors and review warnings before handing off core changes. Structural
+checks do not authenticate owner approval, prove behavior or enforce host access.
+The full stage chain remains in effect; there is no implementation-lane shortcut.
+
 ## Where your work goes
 
-- `framework/contexts/` and `framework/blocks/`: project concepts and contracts.
+- `framework/contexts/`: glossary, domain rules and context-owned scenarios.
+- `framework/blocks/`: capability contracts referencing rule and scenario IDs.
 - `framework/templates/`: starting points for new capability specifications.
 - `docs/`: discussion briefs, decisions, and project documentation.
-- `conformance/`: acceptance mappings and verification evidence.
+- `conformance/`: project acceptance mappings and verification evidence; no runner is bundled.
 - `prototypes/`: optional implementation experiments.
 
 See [setup details](docs/GETTING_STARTED.md) for ordinary cloning, input limits,

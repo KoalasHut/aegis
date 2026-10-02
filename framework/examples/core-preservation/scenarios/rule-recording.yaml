@@ -1,0 +1,54 @@
+- id: SC-CORE-PRESERVATION-001
+  title: An approved rule records its accountable owner
+  exercises: [BR-CORE-PRESERVATION-001]
+  verification: automated
+  given:
+    commands: []
+  when:
+    command: core-preservation.rule.record
+    input:
+      title: Keep a stable rule identifier
+      owner: core steward
+      decision: D-CORE-001
+  then:
+    output:
+      rule:
+        status: approved
+        owner: core steward
+    events: [core-preservation.rule-recorded@1]
+
+- id: SC-CORE-PRESERVATION-002
+  title: A rule without an approving decision is rejected
+  exercises: [BR-CORE-PRESERVATION-002]
+  verification: automated
+  given:
+    commands: []
+  when:
+    command: core-preservation.rule.record
+    input:
+      title: Keep a stable rule identifier
+      owner: core steward
+  then:
+    error: DECISION_REQUIRED
+    observe:
+      - query: core-preservation.rules.list
+        input: {}
+        expect: { items: [] }
+
+- id: SC-CORE-PRESERVATION-003
+  title: Coverage status identifies an uncovered approved automated rule
+  exercises: [BR-CORE-PRESERVATION-003]
+  verification: automated
+  given:
+    commands: []
+  when:
+    query: core-preservation.coverage.status
+    input:
+      approvedAutomatedRules:
+        - BR-CORE-PRESERVATION-001
+        - BR-CORE-PRESERVATION-003
+      coveredRules: [BR-CORE-PRESERVATION-001]
+  then:
+    output:
+      status: uncovered
+      uncoveredRules: [BR-CORE-PRESERVATION-003]

@@ -1,0 +1,6 @@
+- id: SC-TASKS-002
+  title: A malformed scenario
+  exercises: [BR-TASKS-001]
+  verification: automated
+  given: { commands: [] }
+  when: { command: tasks.add, input: {} }

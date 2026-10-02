@@ -5,7 +5,7 @@
   "properties": {
     "id": {
       "type": "string",
-      "pattern": "^(CORE|DOM|DES|CON|DEP|STA|EFF|SEC|EVT|CMP|VER|AGT)-\\d{3}$"
+      "pattern": "^(CORE|DOM|DES|CON|DEP|STA|EFF|SEC|EVT|CMP|VER|AGT|CPR)-\\d{3}$"
     },
     "title": {
       "type": "string",

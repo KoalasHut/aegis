@@ -1,0 +1,12 @@
+# Template status: BLOCKED
+# This drafting aid is intentionally incomplete and is not schema-valid. It is
+# not an approved rule, and BLOCKED is not a domain-rule lifecycle status.
+# Replace every TODO before validating or registering a real themed rule file.
+- id: BR-EXAMPLE-NNN
+  title: TODO
+  statement: TODO
+  type: invariant
+  status: proposed
+  owner: TODO
+  rationale: TODO
+  verification: review

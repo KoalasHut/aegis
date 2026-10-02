@@ -1,0 +1,4 @@
+- id: BR-TASKS-001
+  context: tasks
+  status: deprecated
+  path: contexts/tasks/rules/tasks.yaml

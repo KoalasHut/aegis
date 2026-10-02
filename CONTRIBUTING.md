@@ -24,8 +24,10 @@ distinction between documented instructions and verified host enforcement.
 | `agents/` | Doctrine, stages, roles, schemas, examples, and optional adapters |
 | `framework/` | Reusable specification language, rules, patterns, and templates |
 | `scripts/init.py` | Dependency-free project initialization |
+| `scripts/validate.py` | Structural, reference and coverage validation of core artifacts |
+| `requirements-dev.txt` | Validator and development test dependencies |
 | `docs/PROJECT_README.template.md` | Source for the generated project README |
-| `tests/` | Initialization behavior and safety checks |
+| `tests/` | Initializer safety and validator fixtures/checks |
 | `VERSION` | Aegis template version recorded in new project metadata |
 | `README.md` | Primary user quickstart |
 | `INSTALL.md` | Agent-readable prerequisites and project setup runbook |
@@ -36,8 +38,23 @@ distinction between documented instructions and verified host enforcement.
 From the repository root:
 
 ```bash
+python3 -m venv .venv
+. .venv/bin/activate
+python3 -m pip install -r requirements-dev.txt
 python3 -m unittest discover -s tests -v
+python3 scripts/validate.py
+python3 scripts/validate.py --json
 ```
+
+Use `.venv\Scripts\Activate.ps1` in Windows PowerShell. Initialization and its
+tests remain standard-library-only; the full suite and validator use the declared
+dependencies. For an initializer-only check, use
+`python3 -m unittest discover -s tests -p test_init.py -v`.
+
+Validation is a structural/reference gate, not a scenario runner or approval
+authenticator. Do not claim conformance, host enforcement, automated lanes or
+provisional-rule integration from a passing validator. Those runtime/workflow
+features and legacy extraction remain deferred in 0.2.0.
 
 Tests use disposable copies and leave the template uninitialized. For documentation
 changes, check relative links and ensure the commands match the initializer.
@@ -49,7 +66,9 @@ content in a disposable copy. Preserve existing project data on failure.
 Review `VERSION` when releasing changes. Generated `project.json` files record the
 version used at initialization; existing projects do not automatically receive
 updates. Describe any manual migration needed when changing workflow controls or
-file formats. The initializer is not an upgrade tool: changing its version or
+file formats in the changelog; see [0.2 migration](docs/MIGRATION-0.2.md). The
+template release version is separate from the agent protocol version, which
+remains 0.1.0 in this release. The initializer is not an upgrade tool: changing its version or
 README template can make a repeat run conflict with existing generated files.
 
 ## Publish the template
@@ -60,6 +79,7 @@ manually when ready to publish:
 ```bash
 git status --short
 python3 -m unittest discover -s tests -v
+python3 scripts/validate.py
 git add .
 git diff --cached
 git commit -m "Update Aegis starter"

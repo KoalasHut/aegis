@@ -1,0 +1,70 @@
+- id: BR-CORE-PRESERVATION-001
+  title: Approved rules have accountable owners
+  statement: A recorded approved rule has an accountable owner.
+  type: invariant
+  status: approved
+  owner: Rule catalog steward
+  decision: D-CORE-001
+  rationale: Every authoritative rule needs a person or role responsible for its meaning.
+  verification: automated
+- id: BR-CORE-PRESERVATION-002
+  title: Approved rules require approving decisions
+  statement: Recording an approved rule requires an approving decision.
+  type: policy
+  status: approved
+  owner: Rule catalog steward
+  decision: D-CORE-002
+  rationale: The catalog preserves the authority for every approved rule.
+  effectiveFrom: '2026-10-01'
+  verification: automated
+- id: BR-CORE-PRESERVATION-003
+  title: Coverage status is derived from approved automated rules
+  statement: Coverage status is covered when every approved rule with automated verification is a covered rule; otherwise it is uncovered.
+  type: calculation
+  status: approved
+  owner: Rule catalog steward
+  decision: D-CORE-003
+  rationale: The catalog needs a consistent way to show whether rule coverage is complete.
+  decisionTable:
+    inputs: [approvedAutomatedRules, coveredRules]
+    outputs: [coverageStatus]
+    rows:
+    - when: { approvedAutomatedRules: 'all are in coveredRules' }
+      then: { coverageStatus: covered }
+    - when: { approvedAutomatedRules: 'one or more are absent from coveredRules' }
+      then: { coverageStatus: uncovered }
+  verification: automated
+- id: BR-CORE-PRESERVATION-004
+  title: Rule catalog records are retained for the required period
+  statement: Rule catalog records are retained for the period required by the applicable retention authority.
+  type: constraint
+  status: approved
+  owner: Rule catalog steward
+  decision: D-CORE-004
+  rationale: The retention period is imposed outside the catalog.
+  source:
+    kind: law
+    reference: Applicable rule-record retention authority
+    locator: Rule-record retention section
+  verification: review
+- id: BR-CORE-PRESERVATION-005
+  title: Deprecating an approved rule requires confirmation
+  statement: A person receives confirmation before an approved recorded rule is deprecated.
+  type: quality
+  status: approved
+  owner: Rule catalog steward
+  decision: D-CORE-005
+  rationale: People need a deliberate opportunity to stop an irreversible catalog change.
+  verification: manual
+- id: BR-CORE-PRESERVATION-006
+  title: Legacy recorded rules identified accountable owners
+  statement: Legacy recorded approved rules identified an accountable owner.
+  type: invariant
+  status: extracted
+  owner: Rule catalog steward
+  rationale: The observed legacy behavior needs owner triage before it becomes authoritative.
+  source:
+    kind: evidence
+    reference: Legacy rule catalog behavior
+    locator: legacy/rules/catalog:42-58
+  verification: review
