@@ -1,0 +1,11 @@
+# TEMPLATE ONLY - copy next to the context glossary and replace the example names.
+types:
+  ExampleState:
+    description: A closed example state.
+    enum: [open, complete]
+  ExampleRecord:
+    description: A structured example value.
+    fields:
+      id: {type: id, required: true}
+      state: {type: ExampleState, required: true}
+      occurredAt: {type: datetime}

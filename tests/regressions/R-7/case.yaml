@@ -1,0 +1,6 @@
+id: R-7
+kind: validator
+runs:
+  - {operation: missing-required, expectedFindings: [MISSING_REQUIRED_INPUT]}
+  - {operation: unknown-capture, expectedFindings: [UNKNOWN_CAPTURE]}
+  - {operation: unknown-input, expectedFindings: [UNKNOWN_FIELD]}

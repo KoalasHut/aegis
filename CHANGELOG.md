@@ -1,5 +1,52 @@
 # Changelog
 
+## 0.2.3
+
+Complete the artifact-side type model and define cross-stack value semantics
+before executable conformance work. Agent protocol version remains 0.1.0.
+
+- Add context-owned `types.yaml`, structured enums and records, list/map type
+  expressions, recursive named references, shared normalized type trees and
+  validation at nested record/list/map depth. Existing contract-level unions
+  remain valid; qualified imported type resolution is reserved and not delivered.
+- Treat prose types as opaque with `OPAQUE_TYPE` during 0.2.x. Add
+  `UNKNOWN_TYPE`, `TYPE_SHADOWED`, `UNUSED_TYPE`, `UNKNOWN_FIELD`,
+  `INVALID_ENUM_VALUE`, `MATCHER_TYPE_MISMATCH`, `CONTRADICTORY_EXPECTATION`,
+  `UNSAFE_INTEGER`, capture-path/type and time-zone diagnostics.
+- Make null and absent equivalent for optional expected values, while required
+  input fields remain present and non-null. A separate complete actual-output
+  conformance gate remains phase-3 work.
+- Normalize calendar durations by `(years, months, fixed seconds)`, including
+  mixed fixed components and explicit zeros. This intentionally makes
+  `P1M1D` equal `P1MT24H`; years still do not collapse into months.
+- Supersede OD-17 with exact normalized `number`/`decimal` comparison: exponent,
+  trailing-zero and signed-zero representations normalize without tolerance.
+  Canonical wire decimals are strings; integers are intrinsically limited to
+  the JSON safe range.
+- Compare `string` after NFC normalization, keep `id` and enums raw, require
+  enum membership, and add explicit time-zone and collation vocabulary. Ordinal
+  is the portable automated collation profile; locale ordering stays manual.
+- Extend event expectations with `{event, input}` typed payload assertions.
+  Capture traversal follows record fields only, rejects list indexing, captures
+  maps as whole values and requires equal resolved source/target types.
+- Report one visible finding per deterministic cause by default. Add verbose
+  suppressed findings and same-scope, warning-only, approved-decision-backed
+  allowances that remain visible while no longer failing strict validation.
+- Record approved OD-21 through OD-34, with OD-22 superseding OD-19's nested
+  opacity and OD-27 superseding OD-17's numeric semantics. Add executable
+  matching examples and broaden nested validator/matcher regression coverage.
+- Link 48 normative matching examples to stable specification clauses, require
+  100% matcher branch coverage, and add seven property families, 22 executable
+  historical regressions, and 30 executable validator mutations. Record locally
+  reproduced Python, JavaScript, and .NET serializer output with source and
+  runtime provenance; Kotlin/JVM and Swift remain explicitly unverified.
+
+The reference matcher and validator specify and check artifact semantics. This
+release still has no scenario runner, driver, executable imported-type resolver,
+or conformance report/matrix. Kotlin and Swift serializer evidence was unavailable,
+so five-stack conformance is not claimed. See
+[migration notes](docs/MIGRATION-0.2.md#from-022-to-023).
+
 ## 0.2.2
 
 Protect approved decisions and make scenario values portable before behavioral

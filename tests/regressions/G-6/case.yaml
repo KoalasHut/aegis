@@ -1,0 +1,5 @@
+id: G-6
+kind: validator
+runs:
+  - operation: maintenance-decision
+    expectedFindings: [MAINTENANCE_DECISION_CITED]

@@ -5,13 +5,13 @@ behavior—independent of the stack, so that core can outlive any implementation
 Explicit roles, scoped assignments and reviewable handoffs carry it from the
 first problem discussion to implementation.
 
-Version 0.2.2 provides identified domain rules, structured scenarios and decisions,
-protected rule/decision history, unambiguous captures, contract-typed value
-semantics and checks for artifact references and coverage. Validation does not
-execute scenarios or prove an implementation conforms. A conformance runner,
-driver protocol, workflow lanes, provisional-rule flow and legacy extraction
-remain deferred. See [release notes](CHANGELOG.md) and
-[migration from 0.1.0 or 0.2.0](docs/MIGRATION-0.2.md).
+Version 0.2.3 adds context-owned structured types, nested typed validation,
+portable null/duration/numeric/text semantics, typed event payload assertions and
+decision-backed warning allowances. Validation does not execute scenarios or
+prove an implementation conforms. A conformance runner, driver implementation,
+qualified imported-type resolver, workflow lanes, provisional-rule flow and
+legacy extraction remain deferred. See [release notes](CHANGELOG.md) and
+[migration through 0.2.x](docs/MIGRATION-0.2.md).
 
 **Learn by building:** follow the [TODO app quickstart](QUICKSTART.md) for a
 worked example with prompts, decisions, and expected outputs at every stage.
@@ -125,15 +125,19 @@ agent permissions. The owner must enable Actions where needed and manually make
 both checks required in branch protection. See
 [CI setup](docs/GETTING_STARTED.md#continuous-validation-on-github).
 
-Scenario matching uses contract-declared scalar types. Date-times compare as
-offset-bearing instants at expected precision, numbers by numeric value, and
-`$contains`/`$unordered` with one-to-one element assignment. The tested reference
-matcher documents these semantics for future runners; it does not execute your
-scenarios or produce conformance evidence.
+Scenario matching uses contract-declared type trees at every structured depth.
+Optional null and absence are equivalent, date-times compare as offset-bearing
+instants, numbers and decimals compare exactly, strings normalize to NFC, and
+`$contains`/`$unordered` use one-to-one element assignment. Integers stay within
+the JSON safe range; canonical future wire decimals are strings. The tested
+reference matcher documents these semantics for future runners; it does not
+execute your scenarios, validate complete driver outputs or produce conformance
+evidence. Qualified imported types and locale-aware automated ordering are not
+part of the executable 0.2.3 profile.
 
 ## Where your work goes
 
-- `framework/contexts/`: glossary, domain rules and context-owned scenarios.
+- `framework/contexts/`: glossary, structured types, domain rules and context-owned scenarios.
 - `framework/blocks/`: capability contracts referencing rule and scenario IDs.
 - `framework/templates/`: starting points for new capability specifications.
 - `docs/`: discussion briefs, decisions, and project documentation.

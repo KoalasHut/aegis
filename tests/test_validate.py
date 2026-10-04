@@ -10,6 +10,9 @@ import jsonschema
 import yaml
 from referencing import Registry, Resource
 
+from scripts import validate as validator
+from scripts.aegis_match import match
+
 
 SOURCE = Path(__file__).resolve().parents[1]
 VALIDATOR = SOURCE / "scripts" / "validate.py"
@@ -221,8 +224,8 @@ class ValidationTests(unittest.TestCase):
         scenario.write_text(yaml.safe_dump(document, sort_keys=False), encoding="utf-8")
         result, codes, _ = self.codes(root)
         self.assertNotEqual(result.returncode, 0)
-        self.assertTrue({"UNKNOWN_INPUT_FIELD", "MISSING_REQUIRED_INPUT", "UNKNOWN_OUTPUT_FIELD",
-                         "UNKNOWN_CAPTURE", "UNKNOWN_ERROR_CODE"}.issubset(codes), codes)
+        self.assertTrue({"UNKNOWN_FIELD", "MISSING_REQUIRED_INPUT", "UNKNOWN_CAPTURE",
+                         "UNKNOWN_ERROR_CODE"}.issubset(codes), codes)
 
     def test_rule_and_decision_supersession_failures_are_checked_per_scope(self):
         root = self.make_root()
@@ -366,6 +369,67 @@ class ValidationTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout)  # R-3: scopes are isolated.
         self.assertNotIn("DUPLICATE_ID", codes)
 
+    def test_example_sibling_types_are_isolated_and_unknown_nested_types_are_findings(self):
+        root = self.make_root()
+
+        def write_example(name, contract_id, declared_type, types=None):
+            example = root / "framework/examples" / name
+            (example / "rules").mkdir(parents=True)
+            (example / "contracts").mkdir()
+            (example / "decisions.yaml").write_text(
+                "- {id: D-EXAMPLE-001, title: Example, question: Example, decision: Example, "
+                "status: approved, approver: example, date: '2026-10-02', source: example}\n",
+                encoding="utf-8")
+            (example / "rules/rules.yaml").write_text(
+                "- {id: BR-EXAMPLE-001, title: Example, statement: Example rule., "
+                "type: invariant, status: approved, owner: example, decision: D-EXAMPLE-001, "
+                "rationale: Example, verification: review}\n",
+                encoding="utf-8")
+            contract = {
+                "id": contract_id, "version": "1.0.0", "kind": "query",
+                "summary": "Read an example value.", "types": {}, "input": {},
+                "output": {"value": {"type": declared_type, "required": True,
+                                      "description": "The example value."}},
+                "errors": [], "semantics": ["The example value is returned."],
+            }
+            (example / "contracts/read.yaml").write_text(
+                yaml.safe_dump(contract, sort_keys=False), encoding="utf-8")
+            if types is not None:
+                (example / "types.yaml").write_text(
+                    yaml.safe_dump({"types": types}, sort_keys=False), encoding="utf-8")
+
+        write_example("typed", "typed.read", "ExampleValue", {
+            "ExampleValue": {
+                "description": "A value owned by this example.",
+                "fields": {"name": {"type": "string", "required": True}},
+            }
+        })
+        write_example("missing", "missing.read", "MissingValue[]")
+
+        result, codes, payload = self.codes(root)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual("", result.stderr)
+        unknown = [item for item in payload["findings"] if item["code"] == "UNKNOWN_TYPE"]
+        self.assertEqual(1, len(unknown), unknown)
+        self.assertEqual("example:missing", unknown[0]["scope"])
+        self.assertEqual("contracts/read.yaml", unknown[0]["path"])
+        self.assertNotIn("example:typed", {item["scope"] for item in unknown})
+
+        project_contract = root / "framework/blocks/tasks/contracts/add.yaml"
+        contract = yaml.safe_load(project_contract.read_text(encoding="utf-8"))
+        contract["input"]["title"]["type"] = "RootOnly"
+        project_contract.write_text(yaml.safe_dump(contract, sort_keys=False), encoding="utf-8")
+        (root / "types.yaml").write_text(yaml.safe_dump({"types": {
+            "RootOnly": {"description": "Must not leak into project context lookup.",
+                         "enum": ["value"]}
+        }}, sort_keys=False), encoding="utf-8")
+        result, codes, payload = self.codes(root)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual("", result.stderr)
+        project_unknown = [item for item in payload["findings"]
+                           if item["code"] == "UNKNOWN_TYPE" and item["scope"] == "project"]
+        self.assertEqual(1, len(project_unknown), project_unknown)
+
     def test_phrase_regressions_scan_glossaries_but_not_ordinary_rest(self):
         root = self.make_root()
         rules = root / "framework/contexts/tasks/rules/tasks.yaml"
@@ -403,9 +467,12 @@ class ValidationTests(unittest.TestCase):
             self.assertIn("common.schema.json#/$defs/", (schemas / name).read_text(encoding="utf-8"))
 
     def test_scenario_matcher_capture_setup_error_and_clock_regressions(self):
-        matchers = ({"$contains": []}, {"$unordered": []}, {"$length": 0},
-                    {"$absent": True}, {"$any": True})
-        for matcher in matchers:
+        matchers = (({"$contains": []}, "MATCHER_TYPE_MISMATCH"),
+                    ({"$unordered": []}, "MATCHER_TYPE_MISMATCH"),
+                    ({"$length": 0}, "MATCHER_TYPE_MISMATCH"),
+                    ({"$absent": True}, "CONTRADICTORY_EXPECTATION"),
+                    ({"$any": True}, None))
+        for matcher, expected_code in matchers:
             with self.subTest(matcher=matcher):
                 root = self.make_root()
                 path = root / "framework/contexts/tasks/scenarios/tasks.yaml"
@@ -413,8 +480,11 @@ class ValidationTests(unittest.TestCase):
                 scenario[0]["then"]["output"] = {"item": matcher}
                 path.write_text(yaml.safe_dump(scenario, sort_keys=False), encoding="utf-8")
                 result, codes, _ = self.codes(root)
-                self.assertEqual(result.returncode, 0, result.stdout)
-                self.assertEqual(codes, set())
+                if expected_code:
+                    self.assertIn(expected_code, codes)
+                else:
+                    self.assertEqual(result.returncode, 0, result.stdout)
+                    self.assertEqual(codes, set())
 
         root = self.make_root()
         path = root / "framework/contexts/tasks/scenarios/tasks.yaml"
@@ -434,7 +504,7 @@ class ValidationTests(unittest.TestCase):
             path.write_text(yaml.safe_dump(scenario, sort_keys=False), encoding="utf-8")
 
         root = self.make_root()
-        write_capture(root, "${saved.item.id}")
+        write_capture(root, "${saved.item.title}")
         result, codes, _ = self.codes(root)
         self.assertEqual(result.returncode, 0, result.stdout)
         self.assertEqual(codes, set())
@@ -445,7 +515,7 @@ class ValidationTests(unittest.TestCase):
         root = self.make_root()
         write_capture(root, "${saved.missing.id}")
         result, codes, _ = self.codes(root)
-        self.assertIn("UNKNOWN_CAPTURE_OUTPUT", codes)
+        self.assertIn("UNKNOWN_CAPTURE_FIELD", codes)
 
         for expected, code in (("TITLE_EMPTY", None), ("NOT_DECLARED", "UNKNOWN_ERROR_CODE")):
             root = self.make_root()
@@ -627,7 +697,13 @@ class ValidationTests(unittest.TestCase):
         scenarios[0]["when"]["input"]["title"] = "${failed.item.id}"
         path.write_text(yaml.safe_dump(scenarios, sort_keys=False), encoding="utf-8")
         result, codes, _ = self.codes(root)
-        self.assertTrue({"SCHEMA_INVALID", "UNKNOWN_CAPTURE"}.issubset(codes), codes)  # F-4
+        self.assertEqual({"UNKNOWN_CAPTURE"}, codes)  # F-4: one root cause, one finding.
+        verbose = self.run_validator(root, True, "--verbose-findings")
+        verbose_findings = json.loads(verbose.stdout)["findings"]
+        self.assertEqual({"UNKNOWN_CAPTURE", "SCHEMA_INVALID"},
+                         {item["code"] for item in verbose_findings})
+        self.assertTrue(next(item for item in verbose_findings
+                             if item["code"] == "SCHEMA_INVALID")["suppressed"])
 
     def test_bare_capture_reference_is_rejected(self):
         root = self.make_root()
@@ -687,28 +763,282 @@ class ValidationTests(unittest.TestCase):
         result, codes, _ = self.codes(root)
         self.assertIn("MAINTENANCE_DECISION_CITED", codes)  # F-7
 
-    def test_unknown_contract_types_warn_but_local_types_and_collections_pass(self):
+    def test_one_decision_cause_has_one_default_finding_and_verbose_detail(self):
+        root = self.make_root()
+        rules_path = root / "framework/contexts/tasks/rules/tasks.yaml"
+        rules = yaml.safe_load(rules_path.read_text(encoding="utf-8"))
+        rules[0]["decision"] = "D-AEGIS-999"
+        rules_path.write_text(yaml.safe_dump(rules, sort_keys=False), encoding="utf-8")
+        result, codes, payload = self.codes(root)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual({"MAINTENANCE_DECISION_CITED"}, codes)
+        self.assertTrue(all("cause" in item for item in payload["findings"]))
+
+        verbose = self.run_validator(root, True, "--verbose-findings")
+        findings = json.loads(verbose.stdout)["findings"]
+        self.assertEqual({"MAINTENANCE_DECISION_CITED", "UNKNOWN_DECISION"},
+                         {item["code"] for item in findings})
+        unknown = next(item for item in findings if item["code"] == "UNKNOWN_DECISION")
+        self.assertTrue(unknown["suppressed"])
+        self.assertEqual("MAINTENANCE_DECISION_CITED", unknown["suppressedBy"])
+
+    def test_recursive_type_checks_emit_the_exact_a3_finding_set(self):
+        findings = validator.Findings()
+        path = Path("scenario.yaml")
+        scalar_string = {"kind": "scalar", "name": "string"}
+        scalar_datetime = {"kind": "scalar", "name": "datetime"}
+        enum = {"kind": "enum", "values": ["open", "complete"]}
+        item = {
+            "kind": "record",
+            "fields": {
+                "title": scalar_string,
+                "state": enum,
+                "dueAt": scalar_datetime,
+            },
+            "required": ["title", "state"],
+        }
+        root_type = {
+            "kind": "record",
+            "fields": {
+                "item": item,
+                "items": {"kind": "list", "item": item},
+            },
+            "required": ["item", "items"],
+        }
+        validator.validate_typed_value(
+            {"item": {"state": "Open", "dueAt": "2026-10-02T09:00", "extra": True},
+             "items": {"$length": 1}, "other": True},
+            root_type, None, path, "when.input", findings, input_literal=True,
+        )
+        self.assertEqual(
+            {"UNKNOWN_FIELD", "MISSING_REQUIRED_INPUT", "DATETIME_WITHOUT_OFFSET",
+             "INVALID_ENUM_VALUE"},
+            {item["code"] for item in findings.items},
+        )
+        self.assertIn("when.input.item.extra",
+                      {item.get("fieldPath") for item in findings.items})
+
+        findings = validator.Findings()
+        validator.validate_typed_value(
+            {"$length": 1}, scalar_string, None, path, "then.output.item", findings,
+        )
+        validator.validate_typed_value(
+            {"$absent": True}, scalar_string, None, path, "then.output.required", findings,
+            required=True,
+        )
+        validator.validate_typed_value(
+            2 ** 53, {"kind": "scalar", "name": "integer"}, None, path,
+            "when.input.position", findings, input_literal=True,
+        )
+        validator.validate_typed_value(
+            3, scalar_string, None, path, "when.input.title", findings, input_literal=True,
+        )
+        self.assertEqual(
+            {"MATCHER_TYPE_MISMATCH", "CONTRADICTORY_EXPECTATION", "UNSAFE_INTEGER",
+             "INVALID_TYPED_VALUE"},
+            {item["code"] for item in findings.items},
+        )
+
+    def test_capture_paths_are_type_checked_at_every_segment(self):
+        string = {"kind": "scalar", "name": "string"}
+        identifier = {"kind": "scalar", "name": "id"}
+        item = {"kind": "record", "fields": {"id": identifier}, "required": ["id"]}
+        output = {"kind": "record", "fields": {
+            "item": item,
+            "items": {"kind": "list", "item": item},
+        }, "required": ["item", "items"]}
+        captures = {"saved": {"output": output, "registry": None}}
+        findings = validator.Findings()
+        for value in ("${saved.item.missing}", "${saved.items.0.id}"):
+            validator.validate_typed_value(value, identifier, None, Path("scenario.yaml"),
+                                           "when.input.id", findings, captures=captures)
+        validator.validate_typed_value("${saved.item.id}", string, None, Path("scenario.yaml"),
+                                       "when.input.title", findings, captures=captures)
+        self.assertEqual(
+            {"UNKNOWN_CAPTURE_FIELD", "CAPTURE_PATH_INVALID", "CAPTURE_TYPE_MISMATCH"},
+            {item["code"] for item in findings.items},
+        )
+
+    def test_contract_record_uses_the_matcher_normalized_shape(self):
+        registry = validator.build_registry(context_types={
+            "Event": {"description": "Timestamped event.", "fields": {
+                "dueAt": {"type": "datetime", "required": True},
+            }},
+        })
+        contract = {"output": {
+            "item": {"type": "Event", "required": True, "description": "Event."},
+        }}
+        tree = validator.contract_record(contract, "output", registry,
+                                         Path("contract.yaml"), validator.Findings())
+        self.assertEqual(tree["fields"]["item"]["kind"], "record")
+        self.assertTrue(match(
+            {"item": {"dueAt": "2026-10-02T09:00:00Z"}},
+            {"item": {"dueAt": "2026-10-02T06:00:00-03:00"}},
+            tree, registry,
+        ))
+
+    def test_list_index_capture_has_one_specific_end_to_end_finding(self):
+        root = self.make_root()
+        types_path = root / "framework/contexts/tasks/types.yaml"
+        types = yaml.safe_load(types_path.read_text(encoding="utf-8"))
+        types["types"]["Task"]["fields"]["children"] = {"type": "Task[]"}
+        types_path.write_text(yaml.safe_dump(types, sort_keys=False), encoding="utf-8")
+        scenario_path = root / "framework/contexts/tasks/scenarios/tasks.yaml"
+        scenarios = yaml.safe_load(scenario_path.read_text(encoding="utf-8"))
+        scenarios[0]["given"] = {"steps": [
+            {"command": "tasks.add", "input": {"title": "first"}, "as": "saved"},
+        ]}
+        scenarios[0]["when"]["input"]["title"] = "${saved.item.children.0.id}"
+        scenario_path.write_text(yaml.safe_dump(scenarios, sort_keys=False), encoding="utf-8")
+        result, codes, payload = self.codes(root)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(codes, {"CAPTURE_PATH_INVALID"})
+        self.assertEqual(len(payload["findings"]), 1)
+        verbose = self.run_validator(root, True, "--verbose-findings")
+        verbose_payload = json.loads(verbose.stdout)
+        visible = [item for item in verbose_payload["findings"] if not item.get("suppressed")]
+        suppressed = [item for item in verbose_payload["findings"] if item.get("suppressed")]
+        self.assertEqual([item["code"] for item in visible], ["CAPTURE_PATH_INVALID"])
+        self.assertEqual({item["code"] for item in suppressed}, {"SCHEMA_INVALID"})
+        self.assertEqual({item["cause"] for item in verbose_payload["findings"]},
+                         {visible[0]["cause"]})
+
+    def test_event_assertion_payload_uses_event_input_type(self):
+        root = self.make_root()
+        path = root / "framework/contexts/tasks/scenarios/tasks.yaml"
+        scenarios = yaml.safe_load(path.read_text(encoding="utf-8"))
+        scenarios[0]["then"]["events"] = [{
+            "event": "tasks.added@1",
+            "input": {"item": {"unknown": True}},
+        }]
+        path.write_text(yaml.safe_dump(scenarios, sort_keys=False), encoding="utf-8")
+        result, codes, payload = self.codes(root)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("UNKNOWN_FIELD", codes)
+        message = next(item["message"] for item in payload["findings"]
+                       if item["code"] == "UNKNOWN_FIELD")
+        self.assertIn("then.events.input.item.unknown", message)
+
+    def test_type_registry_governance_findings_are_exercised(self):
+        root = self.make_root()
+        types_path = root / "framework/contexts/tasks/types.yaml"
+        types = yaml.safe_load(types_path.read_text(encoding="utf-8"))
+        types["types"]["Unused"] = {"description": "Unused value.", "enum": ["one"]}
+        types_path.write_text(yaml.safe_dump(types, sort_keys=False), encoding="utf-8")
+        _, codes, _ = self.codes(root)
+        self.assertIn("UNUSED_TYPE", codes)
+
+        root = self.make_root()
+        contract_path = root / "framework/blocks/tasks/contracts/add.yaml"
+        contract = yaml.safe_load(contract_path.read_text(encoding="utf-8"))
+        contract["types"]["Task"] = {
+            "description": "Shadow task.",
+            "fields": {"id": {"type": "id"}},
+        }
+        contract_path.write_text(yaml.safe_dump(contract, sort_keys=False), encoding="utf-8")
+        _, codes, _ = self.codes(root)
+        self.assertIn("TYPE_SHADOWED", codes)
+
+        root = self.make_root()
+        contract_path = root / "framework/blocks/tasks/contracts/add.yaml"
+        contract = yaml.safe_load(contract_path.read_text(encoding="utf-8"))
+        contract["types"]["Legacy"] = "A legacy opaque value."
+        contract["input"]["title"]["type"] = "Legacy"
+        contract_path.write_text(yaml.safe_dump(contract, sort_keys=False), encoding="utf-8")
+        _, codes, _ = self.codes(root)
+        self.assertIn("OPAQUE_TYPE", codes)
+
+    def test_timezone_collation_review_and_decision_backed_allowances(self):
+        root = self.make_root()
+        scenario_path = root / "framework/contexts/tasks/scenarios/tasks.yaml"
+        scenarios = yaml.safe_load(scenario_path.read_text(encoding="utf-8"))
+        scenarios[0]["given"]["timezone"] = "America/Sao_Paulo"
+        scenario_path.write_text(yaml.safe_dump(scenarios, sort_keys=False), encoding="utf-8")
+        rules_path = root / "framework/contexts/tasks/rules/tasks.yaml"
+        rules = yaml.safe_load(rules_path.read_text(encoding="utf-8"))
+        rules[0]["type"] = "policy"
+        rules[0]["statement"] = "Tasks due today are sorted by title."
+        rules_path.write_text(yaml.safe_dump(rules, sort_keys=False), encoding="utf-8")
+        result, codes, _ = self.codes(root)
+        self.assertEqual({"CPR-007-VIOLATION"}, codes)
+
+        allowance = [
+            {"code": code, "path": "framework/contexts/tasks/rules/tasks.yaml",
+             "reason": "Approved migration fixture.", "decision": "D-TASKS-001"}
+            for code in sorted(codes)
+        ]
+        (root / "validation-allow.yaml").write_text(
+            yaml.safe_dump(allowance, sort_keys=False), encoding="utf-8")
+        strict = self.run_validator(root, True, "--strict")
+        self.assertEqual(0, strict.returncode, strict.stdout)
+        self.assertTrue(all(item.get("allowed") for item in json.loads(strict.stdout)["findings"]))
+
+        allowance[0]["decision"] = "D-NOT-APPROVED-001"
+        (root / "validation-allow.yaml").write_text(
+            yaml.safe_dump(allowance, sort_keys=False), encoding="utf-8")
+        result, codes, _ = self.codes(root)
+        self.assertIn("ALLOWANCE_DECISION_NOT_APPROVED", codes)
+
+        scenarios[0]["given"]["timezone"] = "Mars/Olympus_Mons"
+        scenario_path.write_text(yaml.safe_dump(scenarios, sort_keys=False), encoding="utf-8")
+        result, codes, _ = self.codes(root)
+        self.assertIn("INVALID_TIMEZONE", codes)
+
+        rules[0]["collation"] = {"locale": "pt_BR"}
+        rules_path.write_text(yaml.safe_dump(rules, sort_keys=False), encoding="utf-8")
+        result, codes, _ = self.codes(root)
+        self.assertIn("SCHEMA_INVALID", codes)
+
+    def test_cpr_008_applicability_is_review_only_but_locale_automation_warns(self):
+        root = self.make_root()
+        rules_path = root / "framework/contexts/tasks/rules/tasks.yaml"
+        rules = yaml.safe_load(rules_path.read_text(encoding="utf-8"))
+        rules[0]["statement"] = "Tasks are sorted by title."
+        rules_path.write_text(yaml.safe_dump(rules, sort_keys=False), encoding="utf-8")
+
+        result, codes, _ = self.codes(root)
+        self.assertEqual(0, result.returncode, result.stdout)
+        self.assertNotIn("CPR-008-VIOLATION", codes)
+
+        rules[0]["collation"] = {"locale": "pt-BR"}
+        rules[0]["verification"] = "automated"
+        rules_path.write_text(yaml.safe_dump(rules, sort_keys=False), encoding="utf-8")
+        result, codes, _ = self.codes(root)
+        self.assertEqual({"LOCALE_COLLATION_REQUIRES_MANUAL"}, codes)
+
+        rules[0]["verification"] = "manual"
+        rules_path.write_text(yaml.safe_dump(rules, sort_keys=False), encoding="utf-8")
+        result, codes, _ = self.codes(root)
+        self.assertEqual(0, result.returncode, result.stdout)
+        self.assertNotIn("LOCALE_COLLATION_REQUIRES_MANUAL", codes)
+
+    def test_unknown_contract_types_error_but_local_types_and_collections_pass(self):
         root = self.make_root()
         contract_path = root / "framework/blocks/tasks/contracts/add.yaml"
         contract = yaml.safe_load(contract_path.read_text(encoding="utf-8"))
         contract["input"]["title"]["type"] = "MysteryScalar"
         contract_path.write_text(yaml.safe_dump(contract, sort_keys=False), encoding="utf-8")
         result, codes, payload = self.codes(root)
-        self.assertEqual(result.returncode, 0, result.stdout)
-        self.assertIn("UNKNOWN_SCALAR_TYPE", codes)
-        self.assertEqual(payload["errors"], 0)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("UNKNOWN_TYPE", codes)
+        self.assertGreater(payload["errors"], 0)
 
         contract["types"]["MysteryScalar"] = "A locally defined semantic value."
         contract["input"]["title"]["type"] = "MysteryScalar[]"
         contract_path.write_text(yaml.safe_dump(contract, sort_keys=False), encoding="utf-8")
+        scenario_path = root / "framework/contexts/tasks/scenarios/tasks.yaml"
+        scenarios = yaml.safe_load(scenario_path.read_text(encoding="utf-8"))
+        scenarios[0]["when"]["input"]["title"] = ["legacy"]
+        scenario_path.write_text(yaml.safe_dump(scenarios, sort_keys=False), encoding="utf-8")
         result, codes, _ = self.codes(root)
         self.assertEqual(result.returncode, 0, result.stdout)
-        self.assertNotIn("UNKNOWN_SCALAR_TYPE", codes)
+        self.assertNotIn("UNKNOWN_TYPE", codes)
+        self.assertIn("OPAQUE_TYPE", codes)
 
     def test_typed_literals_use_contract_declared_scalar_types(self):
         valid_values = {
             "string": "text", "boolean": True, "integer": 1, "number": 1.5,
-            "decimal": 1.25, "date": "2026-10-02",
+            "decimal": "1.25", "date": "2026-10-02",
             "datetime": "2026-10-02T09:00Z", "duration": "PT2H", "id": "opaque-1",
         }
         root = self.make_root()
@@ -729,7 +1059,7 @@ class ValidationTests(unittest.TestCase):
 
         invalid_values = {
             "string": 1, "boolean": "true", "integer": 1.5, "number": "1",
-            "decimal": "1.25", "date": "2026-02-30",
+            "decimal": "not-decimal", "date": "2026-02-30",
             "datetime": "not-a-date", "duration": "two hours", "id": 7,
         }
         for declared_type, value in invalid_values.items():

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aegis.dev/framework/language/schemas/validation-allow.schema.json",
+  "title": "Scoped validation warning allowances",
+  "description": "Decision-backed warning allowances for one validation scope.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_-]*$" },
+      "path": { "type": "string", "minLength": 1 },
+      "reason": { "type": "string", "minLength": 1 },
+      "decision": { "$ref": "common.schema.json#/$defs/decisionId" }
+    },
+    "required": ["code", "path", "reason", "decision"],
+    "additionalProperties": false
+  }
+}

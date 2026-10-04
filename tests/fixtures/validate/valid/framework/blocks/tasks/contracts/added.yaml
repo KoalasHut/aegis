@@ -2,8 +2,7 @@ id: tasks.added
 version: 1.0.0
 kind: event
 summary: A task was recorded.
-types:
-  Task: A task with a meaningful title.
+types: {}
 input:
   item:
     type: Task

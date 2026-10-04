@@ -62,6 +62,32 @@ a `decisionTable`; its inputs, outputs, and rows make the decision reviewable
 without turning it into executable implementation logic. A decision table can
 only appear on a calculation.
 
+Rules involving `today`, `this week`, or other local-time boundaries state the
+zone basis in the rule itself: for example, the user's zone, the store's zone,
+UTC, or a named IANA zone. Scenario fixtures make that environmental input
+explicit with `given.timezone`; business behavior never inherits the validator
+or implementation host's default zone.
+
+CPR-008 applicability is decided by semantic review. Structural validation
+does not infer from a rule's prose whether the rule orders or compares text.
+When review determines that CPR-008 applies, the rule carries `collation`. Use
+`ordinal` for a portable code-point order after NFC normalization, or
+`{ locale: pt-BR }` when the business rule requires a named locale.
+Locale-aware ordering can differ across stacks and collation-library versions,
+so a rule with locale collation uses manual verification. The validator checks
+the declared collation structure and warns when locale collation is paired with
+automated verification; it does not decide CPR-008 applicability.
+
+## Decision-backed warning allowances
+
+A scope may contain `validation-allow.yaml` when an approved decision accepts
+an intentional warning during migration. Each entry names one warning `code`,
+a bounded scope-relative `path` glob, a human-readable `reason`, and the
+approved `decision`. Allowed warnings remain visible in validation output but
+do not fail `--strict`. Allowances never hide errors. Duplicate, overbroad,
+unapproved, and stale entries are findings themselves so that temporary
+exceptions cannot silently become permanent policy.
+
 ## References from Concept Packs
 
 Concept Packs reference domain rules by ID. `manifest.yaml` distinguishes the

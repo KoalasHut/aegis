@@ -2,8 +2,7 @@ id: tasks.list
 version: 1.0.0
 kind: query
 summary: List tasks.
-types:
-  Task: A task with a meaningful title.
+types: {}
 input: {}
 output:
   items:

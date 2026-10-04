@@ -173,11 +173,13 @@ protection. CI uses `--strict`, so both errors and warnings fail the artifact ga
 ordinary local validation fails on errors only. A green
 check is not proof of behavioral conformance or genuine approval provenance.
 
-For 0.2.2 scenarios, declare top-level scalar field types in contracts and keep
-date-time expectations offset-bearing. Capture names must be unique, references
-must select a field, and expected-error setup steps cannot capture output.
-Typed matching and one-to-one array matching are specified and unit-tested in
-the reference matcher, but no scenario runner is installed.
+For 0.2.3 scenarios, define reusable records and enums in the owning context's
+`types.yaml`; validation follows declared types through nested records, lists and
+maps. Keep date-time expectations offset-bearing, integers within the JSON safe
+range and exact decimals quoted when source precision matters. Capture paths
+traverse record fields only and source/target types must match. Typed matching,
+typed event payload assertions and one-to-one array matching are specified and
+unit-tested in the reference matcher, but no scenario runner or driver is installed.
 
 ## 5. Hand over a ready project
 

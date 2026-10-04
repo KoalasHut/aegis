@@ -1,0 +1,5 @@
+id: F-4
+kind: validator
+runs:
+  - operation: maintenance-decision
+    expectedFindings: [MAINTENANCE_DECISION_CITED]

@@ -2,8 +2,7 @@ id: tasks.task-completed
 version: 1.0.0
 kind: event
 summary: A task was marked complete.
-types:
-  Task: A task with identity, title, position, completion state, and urgency.
+types: {}
 input:
   task:
     type: Task

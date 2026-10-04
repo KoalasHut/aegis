@@ -36,6 +36,11 @@
       "additionalProperties": false,
       "properties": {
         "clock": { "type": "string", "format": "date-time" },
+        "timezone": {
+          "type": "string",
+          "minLength": 1,
+          "description": "IANA time-zone name used for local business-time rules."
+        },
         "actor": {
           "oneOf": [
             { "type": "string", "minLength": 1 },
@@ -132,7 +137,7 @@
         "events": {
           "type": "array",
           "uniqueItems": true,
-          "items": { "$ref": "common.schema.json#/$defs/eventRef" }
+          "items": { "$ref": "#/$defs/eventAssertion" }
         },
         "eventsMatch": { "enum": ["contains"] },
         "observe": {
@@ -157,6 +162,20 @@
         {
           "if": { "required": ["eventsMatch"] },
           "then": { "required": ["events"] }
+        }
+      ]
+    },
+    "eventAssertion": {
+      "oneOf": [
+        { "$ref": "common.schema.json#/$defs/eventRef" },
+        {
+          "type": "object",
+          "properties": {
+            "event": { "$ref": "common.schema.json#/$defs/eventRef" },
+            "input": { "$ref": "#/$defs/expectedObject" }
+          },
+          "required": ["event", "input"],
+          "additionalProperties": false
         }
       ]
     },

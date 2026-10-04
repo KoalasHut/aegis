@@ -1,0 +1,6 @@
+id: G-4
+kind: match
+type: duration
+expected: P1M
+actual: P01M
+result: true

@@ -1,0 +1,10 @@
+{
+  "stack": ".NET",
+  "runtime": "8.0.26",
+  "library": "System.Text.Json",
+  "options": "default and DefaultIgnoreCondition.WhenWritingNull",
+  "observed": {
+    "serializedDefault": "{\"Datetime\":\"2026-10-02T09:00:00+00:00\",\"Decimal\":10.50,\"Note\":null}",
+    "serializedOmitNull": "{\"Datetime\":\"2026-10-02T09:00:00+00:00\",\"Decimal\":10.50}"
+  }
+}

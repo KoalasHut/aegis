@@ -35,6 +35,23 @@
           "additionalProperties": false
         },
         "effectiveFrom": { "type": "string", "format": "date" },
+        "collation": {
+          "description": "Text ordering selected by the rule: portable ordinal order or a named locale.",
+          "oneOf": [
+            { "const": "ordinal" },
+            {
+              "type": "object",
+              "properties": {
+                "locale": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$"
+                }
+              },
+              "required": ["locale"],
+              "additionalProperties": false
+            }
+          ]
+        },
         "supersedes": { "$ref": "common.schema.json#/$defs/ruleId" },
         "decisionTable": {
           "type": "object",

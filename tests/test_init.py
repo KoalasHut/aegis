@@ -41,7 +41,7 @@ class InitializationTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         metadata = json.loads((self.root / "project.json").read_text())
         self.assertEqual(metadata["name"], "sample-project")
-        self.assertEqual(metadata["aegis"]["version"], "0.2.2")
+        self.assertEqual(metadata["aegis"]["version"], "0.2.3")
         self.assertIn("NOT ADMITTED", (self.root / "docs/discussion/initial-assignment.draft.md").read_text())
         self.assertEqual((self.root / "framework/decisions.yaml").read_text(), "[]\n")
         self.assertEqual((self.root / "agents/decisions.yaml").read_text(), "[]\n")

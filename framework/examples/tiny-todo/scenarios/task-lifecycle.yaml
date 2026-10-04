@@ -5,7 +5,7 @@
   given:
     steps:
     - command: tasks.add
-      input: { title: Write outline }
+      input: { title: Write outline, dueAt: '2026-10-02T09:00:00Z' }
       as: task1
     - command: tasks.add
       input: { title: Review outline }
@@ -22,7 +22,7 @@
       input: {}
       expect:
         items:
-        - { id: '${task1.task.id}', position: 1, state: complete }
+        - { id: '${task1.task.id}', position: 1, state: complete, dueAt: '2026-10-02T06:00:00-03:00' }
         - { id: '${task2.task.id}', position: 2, state: open }
 
 - id: SC-TODO-002
@@ -87,3 +87,43 @@
     input: {}
   then:
     output: { items: [] }
+
+- id: SC-TODO-005
+  title: A task due on the UTC local date is marked due today
+  exercises: [BR-TODO-007]
+  verification: automated
+  given:
+    clock: '2026-10-02T01:00:00Z'
+    timezone: UTC
+    steps:
+    - command: tasks.add
+      input: { title: Publish outline, dueAt: '2026-10-02T04:00:00Z' }
+      as: task1
+  when:
+    query: tasks.list
+    input: {}
+  then:
+    output:
+      items:
+        $contains:
+        - { id: '${task1.task.id}', dueAt: '2026-10-02T04:00:00Z', urgency: due-today }
+
+- id: SC-TODO-006
+  title: The same task is not due on the Sao Paulo local date
+  exercises: [BR-TODO-007]
+  verification: automated
+  given:
+    clock: '2026-10-02T01:00:00Z'
+    timezone: America/Sao_Paulo
+    steps:
+    - command: tasks.add
+      input: { title: Publish outline, dueAt: '2026-10-02T04:00:00Z' }
+      as: task1
+  when:
+    query: tasks.list
+    input: {}
+  then:
+    output:
+      items:
+        $contains:
+        - { id: '${task1.task.id}', dueAt: '2026-10-02T04:00:00Z', urgency: scheduled }

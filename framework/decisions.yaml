@@ -150,7 +150,7 @@
   title: "OD-17 — Numeric comparison"
   question: "How are declared numeric values compared?"
   decision: "Compare integer, number and decimal fields by numeric value, so 1 equals 1.0. Decimal comparison uses exact decimal arithmetic. Strings are never coerced to numbers."
-  status: approved
+  status: superseded
   approver: Diego
   date: "2026-10-02"
   source: "Aegis maintenance conversation, 2026-10-02; Diego granted the same authority as the prior round and approved OD-14 through OD-20 using the proposal defaults plus the documented minute-precision Aegis-profile clarification; retained by aegis-022-orchestration and aegis-022-release. Plan SHA256 19b8c6ec15e5af12faca29f6b8a44a823b4a3570ce0253d960438fbca317af4c."
@@ -174,7 +174,7 @@
   title: "OD-19 — Contract-declared value types"
   question: "How does validation choose typed value semantics?"
   decision: "Choose typed parsing and comparison from the contract-declared scalar type, never from a value's shape. Top-level scenario literals are validated against those declarations; nested contract fields remain opaque."
-  status: approved
+  status: superseded
   approver: Diego
   date: "2026-10-02"
   source: "Aegis maintenance conversation, 2026-10-02; Diego granted the same authority as the prior round and approved OD-14 through OD-20 using the proposal defaults plus the documented minute-precision Aegis-profile clarification; retained by aegis-022-orchestration and aegis-022-release. Plan SHA256 19b8c6ec15e5af12faca29f6b8a44a823b4a3570ce0253d960438fbca317af4c."
@@ -182,4 +182,166 @@
     - framework/language/schemas/common.schema.json
     - framework/language/schemas/contract.schema.json
     - framework/language/contract-spec.md
+    - scripts/validate.py
+- id: D-AEGIS-021
+  title: "OD-21 — Context-owned domain types"
+  question: "Where do reusable domain types live?"
+  decision: "A context owns one types.yaml beside its glossary. Contracts reference context types by name and reserve contract-local types for operation-specific shapes. Qualified imported context.Type references are reserved for manifest-based namespace and version resolution; 0.2.3 does not claim imported-type validation."
+  status: approved
+  approver: Diego
+  date: "2026-10-03"
+  source: "Aegis maintenance conversation, 2026-10-03; Diego accepted OD-21 through OD-34 defaults plus the orchestrator's conservative resolutions of audit S-02 through S-24; captured by aegis-023-release. Plan SHA256 836f81d6b492d1ef14cbf6f11dd7a14e63ceca7b47811b3f168a22fda7a5237e; audit SHA256 9c2eba21568f176c3883dfdbb22415c2d0a219951722b6678f136af395813f5e; reviewed Wave 1 baseline 58d258d30d08dfd00de6b5e5ac59b9a0916132a9."
+  affects:
+    - framework/language/type-spec.md
+    - framework/language/schemas/types.schema.json
+    - scripts/validate.py
+- id: D-AEGIS-022
+  title: "OD-22 — Closed type grammar and normalized model"
+  question: "Which type forms and normalized identities does Aegis support?"
+  decision: "Use the nine scalars, closed enums, records, lists, maps and named references, with no inline type-expression unions in 0.2.x; existing contract-level union kinds remain valid. Requiredness lives on record fields, references remain lazy and cycle-safe, and type equality compares resolved normalized trees. Context and local records replace OD-19's nested-opacity limit."
+  status: approved
+  approver: Diego
+  date: "2026-10-03"
+  source: "Aegis maintenance conversation, 2026-10-03; Diego accepted OD-21 through OD-34 defaults plus the orchestrator's conservative resolutions of audit S-02 through S-24; captured by aegis-023-release. Plan SHA256 836f81d6b492d1ef14cbf6f11dd7a14e63ceca7b47811b3f168a22fda7a5237e; audit SHA256 9c2eba21568f176c3883dfdbb22415c2d0a219951722b6678f136af395813f5e; reviewed Wave 1 baseline 58d258d30d08dfd00de6b5e5ac59b9a0916132a9."
+  supersedes: D-AEGIS-019
+  affects:
+    - framework/language/type-spec.md
+    - framework/language/schemas/types.schema.json
+    - scripts/aegis_types.py
+    - scripts/validate.py
+- id: D-AEGIS-023
+  title: "OD-23 — Opaque type migration"
+  question: "How are prose-only types handled during 0.2.x?"
+  decision: "Treat a prose-only type as opaque during 0.2.x, warn with OPAQUE_TYPE, compare its complete value strictly and skip validation below that boundary. It becomes an error in 0.3.0. Unused-type reachability starts at contract fields and follows references; self-reference alone does not establish use."
+  status: approved
+  approver: Diego
+  date: "2026-10-03"
+  source: "Aegis maintenance conversation, 2026-10-03; Diego accepted OD-21 through OD-34 defaults plus the orchestrator's conservative resolutions of audit S-02 through S-24; captured by aegis-023-release. Plan SHA256 836f81d6b492d1ef14cbf6f11dd7a14e63ceca7b47811b3f168a22fda7a5237e; audit SHA256 9c2eba21568f176c3883dfdbb22415c2d0a219951722b6678f136af395813f5e; reviewed Wave 1 baseline 58d258d30d08dfd00de6b5e5ac59b9a0916132a9."
+  affects:
+    - framework/language/type-spec.md
+    - scripts/validate.py
+- id: D-AEGIS-024
+  title: "OD-24 — No-value equivalence"
+  question: "How do absent and null observable values compare?"
+  decision: "For optional values, absent and null are the same observable value. Expected null and $absent accept either; $any requires a present non-null value. Optional inputs may be absent or null. This expectation rule is separate from the phase-3 gate that will validate complete actual outputs."
+  status: approved
+  approver: Diego
+  date: "2026-10-03"
+  source: "Aegis maintenance conversation, 2026-10-03; Diego accepted OD-21 through OD-34 defaults plus the orchestrator's conservative resolutions of audit S-02 through S-24; captured by aegis-023-release. Plan SHA256 836f81d6b492d1ef14cbf6f11dd7a14e63ceca7b47811b3f168a22fda7a5237e; audit SHA256 9c2eba21568f176c3883dfdbb22415c2d0a219951722b6678f136af395813f5e; reviewed Wave 1 baseline 58d258d30d08dfd00de6b5e5ac59b9a0916132a9."
+  affects:
+    - framework/language/scenario-spec.md
+    - scripts/aegis_match.py
+- id: D-AEGIS-025
+  title: "OD-25 — Required means present and non-null"
+  question: "How are required and nullable fields represented?"
+  decision: "required: true means a field is always present and non-null; optional fields may have no value, and there is no nullable flag. Required input literals are validated now. Partial expected objects remain partial matches; phase 3 separately validates required fields in actual driver outputs before matching."
+  status: approved
+  approver: Diego
+  date: "2026-10-03"
+  source: "Aegis maintenance conversation, 2026-10-03; Diego accepted OD-21 through OD-34 defaults plus the orchestrator's conservative resolutions of audit S-02 through S-24; captured by aegis-023-release. Plan SHA256 836f81d6b492d1ef14cbf6f11dd7a14e63ceca7b47811b3f168a22fda7a5237e; audit SHA256 9c2eba21568f176c3883dfdbb22415c2d0a219951722b6678f136af395813f5e; reviewed Wave 1 baseline 58d258d30d08dfd00de6b5e5ac59b9a0916132a9."
+  affects:
+    - framework/language/type-spec.md
+    - scripts/validate.py
+- id: D-AEGIS-026
+  title: "OD-26 — Component-normalized durations"
+  question: "How are calendar and fixed duration components compared?"
+  decision: "Normalize durations to years, months and fixed seconds. Years and months remain distinct; weeks cannot mix with other components; fixed days and time units normalize by length. Mixed values therefore make P1M1D equal P1MT24H, explicit zero components do not change a value, P1Y is not P12M and P1M is not P30D."
+  status: approved
+  approver: Diego
+  date: "2026-10-03"
+  source: "Aegis maintenance conversation, 2026-10-03; Diego accepted OD-21 through OD-34 defaults plus the orchestrator's conservative resolutions of audit S-02 through S-24; captured by aegis-023-release. Plan SHA256 836f81d6b492d1ef14cbf6f11dd7a14e63ceca7b47811b3f168a22fda7a5237e; audit SHA256 9c2eba21568f176c3883dfdbb22415c2d0a219951722b6678f136af395813f5e; reviewed Wave 1 baseline 58d258d30d08dfd00de6b5e5ac59b9a0916132a9."
+  affects:
+    - framework/language/scenario-spec.md
+    - scripts/aegis_match.py
+- id: D-AEGIS-027
+  title: "OD-27 — Exact number and decimal comparison"
+  question: "How are number and decimal representations compared?"
+  decision: "Replace OD-17 with exact normalized decimal-value comparison for number and decimal, with no tolerance. Equivalent exponent, trailing-zero and signed-zero representations compare equally; 0.30000000000000004 does not equal 0.3. Decimal scenario number lexemes are preserved for exact parsing, while canonical protocol inputs use decimal strings. Integer remains a JSON number under OD-28."
+  status: approved
+  approver: Diego
+  date: "2026-10-03"
+  source: "Aegis maintenance conversation, 2026-10-03; Diego accepted OD-21 through OD-34 defaults plus the orchestrator's conservative resolutions of audit S-02 through S-24; captured by aegis-023-release. Plan SHA256 836f81d6b492d1ef14cbf6f11dd7a14e63ceca7b47811b3f168a22fda7a5237e; audit SHA256 9c2eba21568f176c3883dfdbb22415c2d0a219951722b6678f136af395813f5e; reviewed Wave 1 baseline 58d258d30d08dfd00de6b5e5ac59b9a0916132a9."
+  supersedes: D-AEGIS-017
+  affects:
+    - framework/language/type-spec.md
+    - framework/language/scenario-spec.md
+    - scripts/aegis_match.py
+- id: D-AEGIS-028
+  title: "OD-28 — Canonical typed wire values"
+  question: "Which JSON forms preserve typed values between a runner and driver?"
+  decision: "Canonical protocol inputs encode decimal as a string; integer as a JSON number intrinsically restricted to plus or minus 2^53 minus 1; datetime with an RFC 3339 offset; date as YYYY-MM-DD; and duration as ISO 8601. A driver output may use a lossless valid alternate accepted by the type matcher; a lossy or invalid form becomes a phase-3 protocol error or mismatch."
+  status: approved
+  approver: Diego
+  date: "2026-10-03"
+  source: "Aegis maintenance conversation, 2026-10-03; Diego accepted OD-21 through OD-34 defaults plus the orchestrator's conservative resolutions of audit S-02 through S-24; captured by aegis-023-release. Plan SHA256 836f81d6b492d1ef14cbf6f11dd7a14e63ceca7b47811b3f168a22fda7a5237e; audit SHA256 9c2eba21568f176c3883dfdbb22415c2d0a219951722b6678f136af395813f5e; reviewed Wave 1 baseline 58d258d30d08dfd00de6b5e5ac59b9a0916132a9."
+  affects:
+    - framework/language/type-spec.md
+    - conformance/protocol/value-encoding.md
+- id: D-AEGIS-029
+  title: "OD-29 — Explicit business time zones"
+  question: "How do scenarios and rules express local-time behavior?"
+  decision: "A scenario may set given.timezone to an IANA name validated with zoneinfo. Local-time rules state whose zone applies and never inherit a host default. Clocks remain instants. A future driver declares timezone capability; tzdb identity/version and DST behavior are phase-3 executable evidence, not 0.2.3 conformance claims."
+  status: approved
+  approver: Diego
+  date: "2026-10-03"
+  source: "Aegis maintenance conversation, 2026-10-03; Diego accepted OD-21 through OD-34 defaults plus the orchestrator's conservative resolutions of audit S-02 through S-24; captured by aegis-023-release. Plan SHA256 836f81d6b492d1ef14cbf6f11dd7a14e63ceca7b47811b3f168a22fda7a5237e; audit SHA256 9c2eba21568f176c3883dfdbb22415c2d0a219951722b6678f136af395813f5e; reviewed Wave 1 baseline 58d258d30d08dfd00de6b5e5ac59b9a0916132a9."
+  affects:
+    - framework/language/scenario-spec.md
+    - framework/language/domain-rule-spec.md
+    - scripts/validate.py
+- id: D-AEGIS-030
+  title: "OD-30 — NFC string equality"
+  question: "How do text and identifiers compare across stacks?"
+  decision: "Compare string values code point by code point after NFC normalization, without case folding or trimming. Compare id values raw. Enum membership and equality remain raw and case-sensitive; ordinal text ordering first applies NFC."
+  status: approved
+  approver: Diego
+  date: "2026-10-03"
+  source: "Aegis maintenance conversation, 2026-10-03; Diego accepted OD-21 through OD-34 defaults plus the orchestrator's conservative resolutions of audit S-02 through S-24; captured by aegis-023-release. Plan SHA256 836f81d6b492d1ef14cbf6f11dd7a14e63ceca7b47811b3f168a22fda7a5237e; audit SHA256 9c2eba21568f176c3883dfdbb22415c2d0a219951722b6678f136af395813f5e; reviewed Wave 1 baseline 58d258d30d08dfd00de6b5e5ac59b9a0916132a9."
+  affects:
+    - framework/language/type-spec.md
+    - scripts/aegis_match.py
+- id: D-AEGIS-031
+  title: "OD-31 — Declared text collation"
+  question: "How must rules define text ordering?"
+  decision: "A text-ordering rule declares ordinal NFC code-point order or a named locale. Collation remains schema-optional because CPR-008 is review-only and applicability is decided by semantic review, not prose heuristics. Ordinal is the only portable automated collation profile in 0.2.3; locale-aware assertions require manual verification until phase 3 records versioned collation capabilities."
+  status: approved
+  approver: Diego
+  date: "2026-10-03"
+  source: "Aegis maintenance conversation, 2026-10-03; Diego accepted OD-21 through OD-34 defaults plus the orchestrator's conservative resolutions of audit S-02 through S-24; captured by aegis-023-release. Plan SHA256 836f81d6b492d1ef14cbf6f11dd7a14e63ceca7b47811b3f168a22fda7a5237e; audit SHA256 9c2eba21568f176c3883dfdbb22415c2d0a219951722b6678f136af395813f5e; reviewed Wave 1 baseline 58d258d30d08dfd00de6b5e5ac59b9a0916132a9."
+  affects:
+    - framework/language/domain-rule-spec.md
+    - framework/constitution/rules/core-preservation.yaml
+- id: D-AEGIS-032
+  title: "OD-32 — Closed raw enums"
+  question: "How are enumerated values declared and compared?"
+  decision: "An enum is a closed set of unique, non-empty strings. Validation and comparison use raw, case-sensitive membership without Unicode normalization; literals outside the set are INVALID_ENUM_VALUE."
+  status: approved
+  approver: Diego
+  date: "2026-10-03"
+  source: "Aegis maintenance conversation, 2026-10-03; Diego accepted OD-21 through OD-34 defaults plus the orchestrator's conservative resolutions of audit S-02 through S-24; captured by aegis-023-release. Plan SHA256 836f81d6b492d1ef14cbf6f11dd7a14e63ceca7b47811b3f168a22fda7a5237e; audit SHA256 9c2eba21568f176c3883dfdbb22415c2d0a219951722b6678f136af395813f5e; reviewed Wave 1 baseline 58d258d30d08dfd00de6b5e5ac59b9a0916132a9."
+  affects:
+    - framework/language/type-spec.md
+    - scripts/aegis_match.py
+    - scripts/validate.py
+- id: D-AEGIS-033
+  title: "OD-33 — Type-safe capture substitution"
+  question: "Where may a captured value be substituted?"
+  decision: "Capture paths traverse resolved record fields only; list indexing is forbidden, maps are captured only as whole values, and whole record, list or map captures remain complete values. Source and target resolved normalized types must be equal, including event payload targets; id and string are incompatible. Missing optional captured values produce a phase-3 setup error."
+  status: approved
+  approver: Diego
+  date: "2026-10-03"
+  source: "Aegis maintenance conversation, 2026-10-03; Diego accepted OD-21 through OD-34 defaults plus the orchestrator's conservative resolutions of audit S-02 through S-24; captured by aegis-023-release. Plan SHA256 836f81d6b492d1ef14cbf6f11dd7a14e63ceca7b47811b3f168a22fda7a5237e; audit SHA256 9c2eba21568f176c3883dfdbb22415c2d0a219951722b6678f136af395813f5e; reviewed Wave 1 baseline 58d258d30d08dfd00de6b5e5ac59b9a0916132a9."
+  affects:
+    - framework/language/scenario-spec.md
+    - scripts/validate.py
+- id: D-AEGIS-034
+  title: "OD-34 — One visible finding per root cause"
+  question: "How are dependent diagnostics for one cause reported?"
+  decision: "Retain the highest-priority finding for a deterministic same-cause key and suppress lower-priority dependent findings by default. --verbose-findings exposes suppressed items without changing counts or exit behavior. Same-scope warning-only decision-backed allowances apply after suppression, stay visible, and make allowed warnings non-failing under --strict; invalid, stale, duplicate or overbroad allowances remain findings."
+  status: approved
+  approver: Diego
+  date: "2026-10-03"
+  source: "Aegis maintenance conversation, 2026-10-03; Diego accepted OD-21 through OD-34 defaults plus the orchestrator's conservative resolutions of audit S-02 through S-24; captured by aegis-023-release. Plan SHA256 836f81d6b492d1ef14cbf6f11dd7a14e63ceca7b47811b3f168a22fda7a5237e; audit SHA256 9c2eba21568f176c3883dfdbb22415c2d0a219951722b6678f136af395813f5e; reviewed Wave 1 baseline 58d258d30d08dfd00de6b5e5ac59b9a0916132a9."
+  affects:
+    - framework/language/domain-rule-spec.md
     - scripts/validate.py

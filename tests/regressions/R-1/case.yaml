@@ -1,0 +1,5 @@
+id: R-1
+kind: validator
+runs:
+  - operation: base-decision-edit
+    expectedFindings: [APPROVED_DECISION_EDITED]

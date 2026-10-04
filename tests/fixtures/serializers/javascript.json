@@ -1,0 +1,12 @@
+{
+  "stack": "JavaScript",
+  "runtime": "v22.22.0",
+  "library": "ECMAScript JSON/Date",
+  "options": "JSON.stringify and Date.prototype.toISOString defaults",
+  "observed": {
+    "datetime": "2026-10-02T09:00:00.000Z",
+    "decimalNumber": 10.5,
+    "unsafeInteger": 9007199254740992,
+    "nullAndUndefined": {"note": null}
+  }
+}

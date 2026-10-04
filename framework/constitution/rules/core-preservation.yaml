@@ -91,3 +91,33 @@
     code: CPR-006-VIOLATION
   waiver:
     allowed: false
+- id: CPR-007
+  title: Local-time rules identify their zone basis
+  level: SHOULD
+  scope:
+  - domain-rule
+  statement: A policy or calculation involving today, this week, or local time names whose time zone applies.
+  rationale: Keep business dates independent of the host machine's default time zone.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: warning
+    code: CPR-007-VIOLATION
+  waiver:
+    allowed: false
+- id: CPR-008
+  title: Text-ordering rules identify their collation
+  level: SHOULD
+  scope:
+  - domain-rule
+  statement: A domain rule that orders or compares text declares ordinal or named-locale collation.
+  rationale: Keep text ordering explicit across stacks and collation-library versions.
+  verification:
+    type: review
+    automatable: false
+  failure:
+    severity: warning
+    code: CPR-008-VIOLATION
+  waiver:
+    allowed: false

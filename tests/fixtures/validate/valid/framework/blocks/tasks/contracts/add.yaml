@@ -2,8 +2,7 @@ id: tasks.add
 version: 1.0.0
 kind: command
 summary: Record a task.
-types:
-  Task: A task with a meaningful title.
+types: {}
 input:
   title:
     type: string

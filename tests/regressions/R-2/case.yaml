@@ -1,0 +1,5 @@
+id: R-2
+kind: validator
+runs:
+  - operation: base-rule-edit
+    expectedFindings: [APPROVED_RULE_EDITED]

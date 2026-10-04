@@ -1,0 +1,5 @@
+id: F-6
+kind: match
+expected: {$unordered: [{state: open}, {state: open}]}
+actual: [{id: a, state: open}, {id: b, state: complete}]
+result: false

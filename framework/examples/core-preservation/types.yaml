@@ -1,0 +1,11 @@
+types:
+  Rule:
+    description: A reviewed domain rule with accountable ownership and status.
+    fields:
+      title: {type: string, required: true}
+      owner: {type: string, required: true}
+      decision: {type: id}
+      status: {type: string, required: true}
+  CoverageState:
+    description: Whether all approved automated rules are covered.
+    enum: [covered, uncovered]

@@ -65,3 +65,13 @@
   decision: D-TODO-006
   rationale: A task without a title cannot communicate intended work.
   verification: automated
+- id: BR-TODO-007
+  title: Due-today status uses the scenario time zone
+  statement: A task is due today when the local calendar date of its due time equals the local calendar date of the current clock in the scenario's named IANA time zone; otherwise it is scheduled.
+  type: policy
+  status: approved
+  owner: Task-list owner
+  decision: D-TODO-007
+  rationale: A named zone makes the local-date boundary explicit and independent of the host default.
+  effectiveFrom: '2026-10-02'
+  verification: automated

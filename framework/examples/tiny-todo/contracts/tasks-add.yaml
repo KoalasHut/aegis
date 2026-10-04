@@ -2,8 +2,7 @@ id: tasks.add
 version: 1.0.0
 kind: command
 summary: Record a task in a person's ordered list.
-types:
-  Task: A task with identity, title, position, completion state, and urgency.
+types: {}
 input:
   title:
     type: string

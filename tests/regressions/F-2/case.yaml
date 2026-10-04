@@ -1,0 +1,6 @@
+id: F-2
+kind: match
+type: date
+expected: '2026-02-30'
+actual: '2026-02-30'
+result: false

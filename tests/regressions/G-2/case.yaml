@@ -1,0 +1,4 @@
+id: G-2
+kind: artifact
+path: framework/examples/tiny-todo/types.yaml
+requiredTypes: [Task, TaskState]

@@ -1,9 +1,9 @@
 # Starting a project
 
 Keep the core—decisions, vocabulary, domain rules and expected behavior—independent
-of the stack so it can outlive an implementation. Aegis 0.2.2 protects these
-artifacts and defines portable value matching; it does not execute conformance
-scenarios.
+of the stack so it can outlive an implementation. Aegis 0.2.3 protects these
+artifacts and adds structured type-directed validation and portable value
+matching; it does not execute conformance scenarios.
 
 Use the [README](../README.md)'s GitHub template commands for a new repository with fresh
 history. Replace `OWNER` with your account or organization. For prerequisite
@@ -95,13 +95,22 @@ changes that behavior. See the [scenario specification](../framework/language/sc
 for captures, setup errors, event scope and matching grammar. These semantics are
 structurally checked now; a future runner will execute them.
 
-Contracts select scalar comparison semantics for top-level scenario fields.
-Offset-bearing date-times compare as instants at expected precision; numbers
-compare by numeric value; strings are never coerced. `$contains` and `$unordered`
-match expected elements to distinct actual elements. Capture names are unique,
-capture references select at least one output field, and expected-error setup
-steps cannot capture output. The reference matcher is tested code for these
-rules, not scenario execution or conformance evidence.
+Put reusable records and enums in `framework/contexts/<context>/types.yaml` and
+reference them from contracts. Validation follows resolved types through nested
+records, lists and maps. Optional null and absence compare equally; required
+inputs stay present and non-null. Offset-bearing date-times compare as instants,
+numbers and decimals compare exactly, strings use NFC, enums and IDs stay raw,
+and integers stay in the JSON safe range. `$contains` and `$unordered` match
+expected elements to distinct actual elements.
+
+Capture names are unique; paths traverse record fields only and the resolved
+source/target types must match. Expected-error setup steps cannot capture output.
+Events may be string references or `{event, input}` typed payload assertions.
+Use `validation-allow.yaml` only for same-scope, approved-decision-backed warnings;
+allowed warnings stay visible. The reference matcher is tested code for these
+rules, not scenario execution, complete driver-output validation or conformance
+evidence. Qualified imported types and automated locale-aware ordering remain
+outside the executable 0.2.3 profile.
 
 Use the full stage chain for core changes. Conformance runners/drivers, workflow
 lanes, provisional-rule flow and legacy extraction are deferred. The presence of

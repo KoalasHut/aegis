@@ -1,0 +1,7 @@
+id: R-3
+kind: validator
+runs:
+  - operation: overlay:duplicate-id
+    expectedFindings: [DUPLICATE_ID]
+  - operation: overlay:retired-id
+    expectedFindings: [ID_REUSED]

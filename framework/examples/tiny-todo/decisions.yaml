@@ -52,3 +52,12 @@
   date: '2026-10-02'
   source: Illustrative owner approval for the Tiny TODO example.
   affects: [BR-TODO-006, tasks.add]
+- id: D-TODO-007
+  title: Evaluate due-today status in the named scenario time zone
+  question: Which time zone determines whether a task's due time falls on today's local date?
+  decision: Convert both the scenario clock and task due time to the scenario's named IANA time zone and compare their local calendar dates.
+  status: approved
+  approver: Tiny TODO owner
+  date: '2026-10-02'
+  source: Illustrative owner approval for the Tiny TODO timezone-boundary example.
+  affects: [BR-TODO-007, SC-TODO-005, SC-TODO-006]

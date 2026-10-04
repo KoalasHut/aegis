@@ -7,8 +7,14 @@ authors can exercise the specified recursive, typed, and one-to-one behavior.
 
 import datetime as dt
 import re
+import unicodedata
 from decimal import Decimal, InvalidOperation
 from collections.abc import Mapping, Sequence
+
+try:
+    from scripts.aegis_types import SCALAR_TYPES, resolve_type
+except ModuleNotFoundError:  # pragma: no cover - direct script execution fallback
+    from aegis_types import SCALAR_TYPES, resolve_type
 
 
 class MatchError(ValueError):
@@ -17,10 +23,7 @@ class MatchError(ValueError):
 
 _MISSING = object()
 _MATCHERS = {"$contains", "$unordered", "$length", "$absent", "$any"}
-SCALAR_TYPES = frozenset({
-    "string", "boolean", "integer", "number", "decimal",
-    "date", "datetime", "duration", "id",
-})
+MAX_SAFE_INTEGER = 2 ** 53 - 1
 _AEGIS_DATETIME = re.compile(
     r"^(\d{4})-(\d{2})-(\d{2})[Tt](\d{2}):(\d{2})"
     r"(?::(\d{2})(?:\.(\d+))?)?([Zz]|[+-]\d{2}:\d{2})$"
@@ -36,15 +39,20 @@ _DURATION = re.compile(
 )
 
 
-def match(expected, actual, declared_type=None):
+def match(expected, actual, type_tree=None, registry=None, **compatibility):
     """Return whether *actual* satisfies an Aegis expected value.
 
-    ``declared_type`` is normally one scalar type string for the top-level
-    contract field.  A mapping or one-element sequence can also describe child
-    types when this helper is used directly; the 0.2.x validator deliberately
-    limits contract validation to top-level fields.
+    ``type_tree`` is a normalized node from :mod:`aegis_types`. For 0.2.2
+    callers, scalar strings, child mappings, one-element list hints, and the
+    deprecated ``declared_type=`` keyword remain accepted.
     """
-    return _match(expected, actual, declared_type)
+    if "declared_type" in compatibility:
+        if type_tree is not None or len(compatibility) != 1:
+            raise TypeError("declared_type cannot be combined with type_tree")
+        type_tree = compatibility["declared_type"]
+    elif compatibility:
+        raise TypeError("unexpected keyword arguments: " + ", ".join(compatibility))
+    return _match(expected, actual, type_tree, registry or {})
 
 
 def scalar_validation_error(value, declared_type):
@@ -68,9 +76,11 @@ def scalar_validation_error(value, declared_type):
     elif declared_type == "duration":
         valid = _parse_duration(value) is not None
     elif declared_type in {"integer", "number", "decimal"}:
-        number = _finite_decimal(value)
+        number = _finite_decimal(value, allow_string=declared_type == "decimal")
         valid = (number is not None
                  and (declared_type != "integer" or number == number.to_integral_value()))
+        if valid and declared_type == "integer" and abs(number) > MAX_SAFE_INTEGER:
+            return "UNSAFE_INTEGER"
     elif declared_type in {"string", "id"}:
         valid = isinstance(value, str)
     else:
@@ -78,30 +88,36 @@ def scalar_validation_error(value, declared_type):
     return None if valid else "INVALID_TYPED_VALUE"
 
 
-def _match(expected, actual, declared_type):
+def _match(expected, actual, declared_type, registry):
+    node = resolve_type(declared_type, registry) if declared_type is not None else None
+    if node is not None and node["kind"] == "opaque":
+        return actual is not _MISSING and type(expected) is type(actual) and expected == actual
+    if expected is None:
+        return actual is _MISSING or actual is None
+
     matcher = _matcher_name(expected)
     if matcher is not None:
-        return _match_explicit(matcher, expected[matcher], actual, declared_type)
+        return _match_explicit(matcher, expected[matcher], actual, node, registry)
 
     if isinstance(expected, Mapping):
         if actual is _MISSING or not isinstance(actual, Mapping):
             return False
         for key, value in expected.items():
             candidate = actual[key] if key in actual else _MISSING
-            if not _match(value, candidate, _child_type(declared_type, key)):
+            if not _match(value, candidate, _child_type(node, key), registry):
                 return False
         return True
 
     if isinstance(expected, list):
         if not isinstance(actual, list) or len(expected) != len(actual):
             return False
-        item_type = _child_type(declared_type)
-        return all(_match(left, right, item_type)
+        item_type = _child_type(node)
+        return all(_match(left, right, item_type, registry)
                    for left, right in zip(expected, actual))
 
     if actual is _MISSING:
         return False
-    return _match_scalar(expected, actual, declared_type)
+    return _match_scalar(expected, actual, node)
 
 
 def _matcher_name(expected):
@@ -115,11 +131,11 @@ def _matcher_name(expected):
     return matcher_keys[0]
 
 
-def _match_explicit(name, operand, actual, declared_type):
+def _match_explicit(name, operand, actual, declared_type, registry):
     if name == "$absent":
-        return operand is True and actual is _MISSING
+        return operand is True and (actual is _MISSING or actual is None)
     if name == "$any":
-        return operand is True and actual is not _MISSING
+        return operand is True and actual is not _MISSING and actual is not None
     if not isinstance(actual, list):
         return False
     if name == "$length":
@@ -130,14 +146,14 @@ def _match_explicit(name, operand, actual, declared_type):
         return False
     if name == "$contains" and len(operand) > len(actual):
         return False
-    return _has_one_to_one_assignment(operand, actual, _child_type(declared_type))
+    return _has_one_to_one_assignment(operand, actual, _child_type(declared_type), registry)
 
 
-def _has_one_to_one_assignment(expected, actual, item_type):
+def _has_one_to_one_assignment(expected, actual, item_type, registry):
     """Find a complete expected-to-actual assignment by augmenting paths."""
     edges = [
         [actual_index for actual_index, candidate in enumerate(actual)
-         if _match(value, candidate, item_type)]
+         if _match(value, candidate, item_type, registry)]
         for value in expected
     ]
     assigned_expected = [-1] * len(actual)
@@ -157,37 +173,52 @@ def _has_one_to_one_assignment(expected, actual, item_type):
 
 
 def _child_type(declared_type, key=None):
-    if isinstance(declared_type, Mapping) and key is not None:
-        return declared_type.get(key)
-    if (key is None and isinstance(declared_type, Sequence)
-            and not isinstance(declared_type, (str, bytes)) and len(declared_type) == 1):
-        return declared_type[0]
+    if not isinstance(declared_type, Mapping):
+        return None
+    if key is not None and declared_type.get("kind") == "record":
+        return declared_type.get("fields", {}).get(key)
+    if key is not None and declared_type.get("kind") == "map":
+        return declared_type["value"]
+    if key is None and declared_type.get("kind") == "list":
+        return declared_type["item"]
     return None
 
 
 def _match_scalar(expected, actual, declared_type):
-    if declared_type == "datetime":
+    kind = declared_type.get("kind") if isinstance(declared_type, Mapping) else None
+    name = declared_type.get("name") if kind == "scalar" else None
+    if kind == "enum":
+        return (isinstance(expected, str) and isinstance(actual, str)
+                and expected in declared_type["values"]
+                and actual in declared_type["values"] and expected == actual)
+    if name == "datetime":
         return _match_datetime(expected, actual)
-    if declared_type == "date":
+    if name == "date":
         return _match_date(expected, actual)
-    if declared_type == "duration":
+    if name == "duration":
         return _match_duration(expected, actual)
-    if declared_type in {"integer", "number", "decimal"}:
-        return _match_number(expected, actual, declared_type)
-    if declared_type in {"string", "id"}:
+    if name in {"integer", "number", "decimal"}:
+        return _match_number(expected, actual, name)
+    if name == "string":
+        return (isinstance(expected, str) and isinstance(actual, str)
+                and unicodedata.normalize("NFC", expected) == unicodedata.normalize("NFC", actual))
+    if name == "id":
         return isinstance(expected, str) and isinstance(actual, str) and expected == actual
-    if declared_type == "boolean":
+    if name == "boolean":
         return isinstance(expected, bool) and isinstance(actual, bool) and expected == actual
     return type(expected) is type(actual) and expected == actual
 
 
-def _finite_decimal(value):
-    if isinstance(value, bool) or not isinstance(value, (int, float, Decimal)):
+def _finite_decimal(value, allow_string=False):
+    if isinstance(value, bool) or not isinstance(value, (int, float, Decimal, str)):
+        return None
+    if isinstance(value, str) and (not allow_string or not re.fullmatch(
+            r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?", value)):
         return None
     try:
         number = Decimal(str(value))
         return number if number.is_finite() else None
-    except InvalidOperation:
+    except InvalidOperation:  # pragma: no cover - guarded by accepted runtime types/forms
         return None
 
 
@@ -195,7 +226,9 @@ def _match_number(expected, actual, declared_type):
     if (scalar_validation_error(expected, declared_type) is not None
             or scalar_validation_error(actual, declared_type) is not None):
         return False
-    return _finite_decimal(expected) == _finite_decimal(actual)
+    allow_string = declared_type == "decimal"
+    return (_finite_decimal(expected, allow_string=allow_string)
+            == _finite_decimal(actual, allow_string=allow_string))
 
 
 def _parse_datetime(value):
@@ -269,19 +302,17 @@ def _parse_duration(value):
     if weeks is not None and any(piece is not None
                                  for piece in (years, months, days, hours, minutes, seconds)):
         return None
-    if years is not None or months is not None:
-        return "calendar", value
     total = (Decimal(weeks or 0) * Decimal(604800)
              + Decimal(days or 0) * Decimal(86400)
              + Decimal(hours or 0) * Decimal(3600)
              + Decimal(minutes or 0) * Decimal(60)
              + Decimal(seconds or 0))
-    return "fixed", total
+    return Decimal(years or 0), Decimal(months or 0), total
 
 
 def _match_duration(expected, actual):
     left = _parse_duration(expected)
     right = _parse_duration(actual)
-    if left is None or right is None or left[0] != right[0]:
+    if left is None or right is None:
         return False
-    return left[1] == right[1]
+    return left == right

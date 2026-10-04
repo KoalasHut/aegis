@@ -1,0 +1,15 @@
+types:
+  TaskState:
+    description: Whether a task still needs attention.
+    enum: [open, complete]
+  Task:
+    description: A task in a person's ordered list.
+    fields:
+      id: {type: id, required: true}
+      title: {type: string, required: true}
+      position: {type: integer, required: true}
+      state: {type: TaskState, required: true}
+      dueAt: {type: datetime}
+      urgency: {type: string}
+      tags: {type: "string[]"}
+      notes: {type: "map<string>"}

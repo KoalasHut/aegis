@@ -2,8 +2,7 @@ id: tasks.seed
 version: 1.0.0
 kind: port
 summary: Establish task state for a declared test boundary.
-types:
-  Task: A task with a meaningful title.
+types: {}
 input: {}
 output: {}
 errors: []

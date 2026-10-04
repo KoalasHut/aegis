@@ -2,25 +2,23 @@ id: core-preservation.coverage.status
 version: 1.0.0
 kind: query
 summary: Determine whether approved automated rules are covered by scenarios.
-types:
-  CoverageStatus: The coverage result for a set of approved automated rules.
-  RuleId: The opaque identity of a domain rule.
+types: {}
 input:
   approvedAutomatedRules:
-    type: RuleId[]
+    type: id[]
     required: true
     description: Approved automated rules in scope.
   coveredRules:
-    type: RuleId[]
+    type: id[]
     required: true
     description: Rules exercised by scenarios in scope.
 output:
   status:
-    type: string
+    type: CoverageState
     required: true
     description: Covered when every approved automated rule is exercised; otherwise uncovered.
   uncoveredRules:
-    type: RuleId[]
+    type: id[]
     required: true
     description: Approved automated rules without scenario coverage.
 errors: []

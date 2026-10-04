@@ -2,8 +2,7 @@ id: tasks.list
 version: 1.0.0
 kind: query
 summary: List a person's tasks in position order.
-types:
-  Task: A task with identity, title, position, completion state, and urgency.
+types: {}
 input: {}
 output:
   items:

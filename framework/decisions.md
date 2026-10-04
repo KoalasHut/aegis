@@ -3,8 +3,9 @@
 This file is narrative. [decisions.yaml](decisions.yaml) is authoritative for
 validation. OD-1 through OD-5 map to D-AEGIS-001 through D-AEGIS-005; OD-8 through
 OD-12 map to D-AEGIS-008 through D-AEGIS-012; OD-14 through OD-19 map to
-D-AEGIS-014 through D-AEGIS-019. Workflow decisions OD-6, OD-7, OD-13 and OD-20
-are in [the agents YAML log](../agents/decisions.yaml).
+D-AEGIS-014 through D-AEGIS-019; OD-21 through OD-34 map to D-AEGIS-021
+through D-AEGIS-034. Workflow decisions OD-6, OD-7, OD-13 and OD-20 are in
+[the agents YAML log](../agents/decisions.yaml).
 
 These are Aegis framework decisions, not generated-project product approvals.
 Owner/issuer: Diego. Approval source, proposal digest, starting revision and
@@ -104,3 +105,52 @@ retain the approval source and plan digest.
 OD-20, the maintenance-decision guard, is summarized in the workflow narrative.
 The tested matcher is a reference implementation of these semantics, not a
 scenario runner or conformance result.
+
+## Type and cross-stack semantics approved for 0.2.3
+
+Diego approved OD-21 through OD-34 on 2026-10-03 using the defaults in the
+reviewed 0.2.3 plan plus the orchestrator's conservative resolutions of audit
+S-02 through S-24. The authoritative records retain the exact plan and audit
+digests and the reviewed Wave 1 revision. OD-27 supersedes OD-17's numeric
+policy; OD-22 supersedes OD-19's top-level-only type limit. The old records stay
+in the YAML log with `status: superseded`.
+
+- OD-21 puts reusable types in a context `types.yaml`. Qualified imported types
+  remain reserved until manifest namespace and version resolution is implemented.
+- OD-22 closes the type-expression grammar over scalars, enums, records, lists,
+  maps and lazy named references. It excludes inline type unions while preserving
+  existing contract-level union kinds. Requiredness remains on record fields and
+  equality uses resolved normalized trees.
+- OD-23 permits opaque prose types with `OPAQUE_TYPE` during 0.2.x. Validation
+  stops below that boundary; reachability begins at contract fields, so a
+  recursive self-reference alone does not make a type used.
+- OD-24 and OD-25 make absent and null equivalent for optional observable values.
+  Required inputs remain present and non-null. Partial expected-object matching
+  is separate from the complete actual-output check deferred to phase 3.
+- OD-26 normalizes durations to years, months and fixed seconds. Fixed components
+  normalize even in mixed values (`P1M1D` equals `P1MT24H`), explicit zero
+  components do not change a value, and years never collapse into months.
+- OD-27 compares `number` and `decimal` by exact normalized decimal value, with
+  no tolerance. Exponents, trailing zeros and signed zero normalize; authors use
+  quoted decimals when source-lexeme precision matters.
+- OD-28 defines lossless wire forms: decimal strings and safe-range JSON integers,
+  plus offset-bearing date-times, dates and durations. A runner/driver protocol
+  and actual-output conformance gate are still phase-3 work.
+- OD-29 makes the business time zone explicit and uses available `zoneinfo` data
+  for artifact validation. Tzdb version/capability and DST execution evidence
+  belong to phase 3.
+- OD-30 applies NFC to `string`, while `id` and enum members remain raw.
+- OD-31 requires semantic review of text-ordering rules. Ordinal NFC code-point
+  order is the only portable automated profile in 0.2.3; locale-aware assertions
+  remain manual and CPR-008 applicability is not inferred from prose.
+- OD-32 makes enums closed, raw and case-sensitive.
+- OD-33 lets captures traverse record fields only, forbids list indexing, treats
+  maps as whole values and requires equal resolved source and target types,
+  including typed event payloads. Event expectations retain string references
+  and add `{event, input}` for a typed payload assertion.
+- OD-34 reports the highest-priority diagnosis for one deterministic cause by
+  default. Verbose mode exposes dependent findings. Same-scope, warning-only,
+  decision-backed allowances apply after suppression and stay visible.
+
+These decisions specify artifact and matching behavior. Release 0.2.3 does not
+claim a scenario runner, driver, imported-type integration, or five-stack corpus.

@@ -1,0 +1,6 @@
+id: F-3
+kind: match
+type: duration
+expected: PT120M
+actual: PT2H
+result: true

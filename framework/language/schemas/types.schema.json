@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aegis.dev/framework/language/schemas/types.schema.json",
+  "title": "Aegis context type declarations",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "types": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "pattern": "^[A-Za-z][A-Za-z0-9_]*$" },
+      "additionalProperties": { "$ref": "#/$defs/typeDefinition" }
+    }
+  },
+  "required": ["types"],
+  "$defs": {
+    "typeDefinition": {
+      "oneOf": [
+        { "type": "string", "minLength": 1 },
+        { "$ref": "#/$defs/enumDefinition" },
+        { "$ref": "#/$defs/recordDefinition" }
+      ]
+    },
+    "enumDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "description": { "type": "string", "minLength": 1 },
+        "enum": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "required": ["description", "enum"]
+    },
+    "recordDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "description": { "type": "string", "minLength": 1 },
+        "fields": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/field" }
+        }
+      },
+      "required": ["description", "fields"]
+    },
+    "field": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": { "$ref": "common.schema.json#/$defs/typeName" },
+        "required": { "type": "boolean", "default": false },
+        "description": { "type": "string", "minLength": 1 }
+      },
+      "required": ["type"]
+    }
+  }
+}

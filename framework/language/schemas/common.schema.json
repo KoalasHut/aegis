@@ -12,10 +12,13 @@
       "enum": ["string", "boolean", "integer", "number", "decimal", "date", "datetime", "duration", "id"]
     },
     "typeName": {
-      "description": "A recognized scalar type or a semantic type name. Unknown scalar-looking names remain schema-valid during the 0.2.x warning migration.",
+      "description": "A scalar, named reference, list, or string-keyed map type expression.",
       "anyOf": [
         { "$ref": "#/$defs/scalarType" },
-        { "type": "string", "minLength": 1 }
+        {
+          "type": "string",
+          "pattern": "^(?:[A-Za-z][A-Za-z0-9_]*(?:\\.[A-Za-z][A-Za-z0-9_]*)*|map<.+>)(?:\\[\\])*$"
+        }
       ]
     }
   }

@@ -55,11 +55,12 @@ dependencies. For an initializer-only check, use
 Validation is a structural/reference gate, not a scenario runner or approval
 authenticator. Do not claim conformance, host enforcement, automated lanes or
 provisional-rule integration from a passing validator. Those runtime/workflow
-features and legacy extraction remain deferred in 0.2.0.
-The 0.2.2 hardening release preserves these limits; its `--base` checks protect
-approved rules and decisions, and `--strict` strengthens artifact review without
-executing domain scenarios. `scripts/aegis_match.py` is tested reference code,
-not a conformance runner.
+features and legacy extraction remain deferred.
+The 0.2.3 release preserves these limits: its type tree, nested validation,
+matching examples, finding suppression and allowances strengthen artifact review
+without executing domain scenarios. `scripts/aegis_match.py` is tested reference
+code, not a conformance runner. Qualified imported types, complete actual-output
+checks and versioned time-zone/collation capabilities remain phase-3 work.
 
 Keep project and example validation scopes isolated. The authoritative decision
 logs are `framework/decisions.yaml`, `agents/decisions.yaml`, and each example's

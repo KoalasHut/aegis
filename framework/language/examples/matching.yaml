@@ -1,0 +1,91 @@
+types:
+  TaskState:
+    description: Whether a task still needs attention.
+    enum: [open, complete]
+  Task:
+    description: A task used by the matching examples.
+    fields:
+      id: {type: id, required: true}
+      title: {type: string, required: true}
+      state: {type: TaskState, required: true}
+      dueAt: {type: datetime}
+      note: {type: string}
+      tags: {type: "string[]"}
+      metadata: {type: "map<string>"}
+  Envelope:
+    description: A nested task result.
+    fields:
+      task: {type: Task, required: true}
+  TaskTree:
+    description: A recursive task tree.
+    fields:
+      task: {type: Task, required: true}
+      children: {type: "TaskTree[]"}
+  CaptureOutput:
+    description: Typed values available from a captured operation output.
+    fields:
+      item: {type: Task, required: true}
+      items: {type: "Task[]", required: true}
+      metadata: {type: "map<string>", required: true}
+      optionalId: {type: id}
+  LegacyRule: A prose-only legacy rule.
+
+examples:
+  - {id: M-01, clauses: [SS-001], expected: {state: open}, actual: {id: a, state: open}, result: true}
+  - {id: M-02, clauses: [SS-001], expected: [1, 2], actual: [2, 1], result: false}
+  - {id: M-03, clauses: [SS-003], type: datetime, expected: "2026-10-02T09:00:00Z", actual: "2026-10-02T11:00:00+02:00", result: true}
+  - {id: M-04, clauses: [SS-003, SS-009], type: datetime, expected: "2026-10-02T09:00:00Z", actual: "2026-10-02T09:00:00.999Z", result: true}
+  - {id: M-05, clauses: [SS-003, SS-009], type: datetime, expected: "2026-10-02T09:00:00Z", actual: "2026-10-02T09:00:01Z", result: false}
+  - {id: M-06, clauses: [SS-005, TS-011], type: duration, expected: P1M, actual: P01M, result: true}
+  - {id: M-07, clauses: [SS-005], type: duration, expected: P1Y2M, actual: P1Y2MT0S, result: true}
+  - {id: M-08, clauses: [SS-005], type: duration, expected: P1D, actual: PT24H, result: true}
+  - {id: M-09, clauses: [SS-005], type: duration, expected: P1Y, actual: P12M, result: false}
+  - {id: M-10, clauses: [SS-005], type: duration, expected: P1M, actual: P30D, result: false}
+  - {id: M-11, clauses: [SS-006, TS-009], type: number, expected: 0.3, actual: 0.30000000000000004, result: false}
+  - {id: M-12, clauses: [SS-007, TS-010], type: decimal, expected: "10.50", actual: 10.5, result: true}
+  - {id: M-13, clauses: [SS-006, TS-008], type: integer, expected: 1, actual: 1.0, result: true}
+  - {id: M-14, clauses: [SS-008, TS-007], type: string, expected: "é", actual: "é", result: true}
+  - {id: M-15, clauses: [SS-008, TS-007], type: id, expected: "é", actual: "é", result: false}
+  - {id: M-16, clauses: [SS-008, TS-007], type: TaskState, expected: open, actual: open, result: true}
+  - {id: M-17, clauses: [SS-008, TS-007], type: TaskState, expected: open, actual: Open, result: false}
+  - id: M-18
+    clauses: [SS-002, SS-003, TS-001, TS-002, TS-003]
+    type: Envelope
+    expected: {task: {dueAt: "2026-10-02T09:00:00Z"}}
+    actual: {task: {id: a, title: one, state: open, dueAt: "2026-10-02T06:00:00-03:00"}}
+    result: true
+  - {id: M-19, clauses: [SS-011, TS-006], type: Task, expected: {note: null}, actual: {}, result: true}
+  - {id: M-20, clauses: [SS-011, TS-006], type: Task, expected: {note: null}, actual: {note: null}, result: true}
+  - {id: M-21, clauses: [SS-010, SS-011], type: Task, expected: {note: {$absent: true}}, actual: {}, result: true}
+  - {id: M-22, clauses: [SS-010, SS-011], type: Task, expected: {note: {$absent: true}}, actual: {note: null}, result: true}
+  - {id: M-23, clauses: [SS-010, SS-011], type: Task, expected: {note: {$any: true}}, actual: {note: null}, result: false}
+  - {id: M-24, clauses: [SS-010, SS-011], type: Task, expected: {note: {$any: true}}, actual: {note: value}, result: true}
+  - {id: M-25, clauses: [SS-010, SS-012, TS-003], type: "string[]", expected: {$unordered: [a, b]}, actual: [b, a], result: true}
+  - {id: M-26, clauses: [SS-010, SS-012], type: "string[]", expected: {$contains: [a]}, actual: [b, a], result: true}
+  - {id: M-27, clauses: [SS-010], type: "string[]", expected: {$length: 2}, actual: [b, a], result: true}
+  - {id: M-28, clauses: [SS-002, SS-008, TS-003], type: Task, expected: {metadata: {one: "é"}}, actual: {metadata: {one: "é", two: x}}, result: true}
+  - {id: M-29, clauses: [TS-005], type: LegacyRule, expected: {statement: same}, actual: {statement: same, extra: true}, result: false}
+  - {id: M-30, clauses: [SS-008, TS-007], type: string, expected: Open, actual: open, result: false}
+  - {id: M-31, clauses: [SS-004, TS-011], type: date, expected: "2026-10-02", actual: "2026-10-02", result: true}
+  - {id: M-32, clauses: [SS-006, TS-009], type: number, expected: -0.0, actual: 0.0, result: true}
+  - {id: M-33, clauses: [SS-006, TS-009], type: number, expected: 100, actual: 1.0e+2, result: true}
+  - {id: M-34, clauses: [SS-007, TS-010], type: decimal, expected: "1.2300", actual: 1.23, result: true}
+  - {id: M-35, clauses: [SS-008], type: boolean, expected: true, actual: true, result: true}
+  - {id: M-36, clauses: [SS-006, TS-009], type: number, expected: 0.100000000000000005, actual: 0.1, result: false}
+  - {id: M-37, clauses: [SS-007, TS-010], type: decimal, expected: 0.100000000000000005, actual: "0.100000000000000005", result: true}
+  - {id: M-38, clauses: [SS-007, TS-010], type: decimal, expected: "+0.00e-4", actual: "-0E+9", result: true}
+  - {id: M-39, clauses: [SS-013, SS-014], kind: capture, value: "${saved.item.id}", targetType: id, result: true}
+  - {id: M-40, clauses: [SS-013], kind: capture, value: "${saved.items.0.id}", targetType: id, finding: CAPTURE_PATH_INVALID}
+  - {id: M-41, clauses: [SS-014], kind: capture, value: "${saved.item.id}", targetType: string, finding: CAPTURE_TYPE_MISMATCH}
+  - {id: M-42, clauses: [SS-013], kind: capture, value: "${saved.items}", targetType: "Task[]", result: true}
+  - {id: M-43, clauses: [SS-013], kind: capture, value: "${saved.metadata}", targetType: "map<string>", result: true}
+  - {id: M-44, clauses: [SS-015], kind: runtime, value: "${saved.optionalId}", targetType: id, runtimeResultWhenAbsent: error}
+  - id: M-45
+    clauses: [TS-003]
+    type: TaskTree
+    expected: {task: {id: root}, children: [{task: {id: child}}]}
+    actual: {task: {id: root, title: Root, state: open}, children: [{task: {id: child, title: Child, state: complete}, children: []}]}
+    result: true
+  - {id: M-46, clauses: [TS-004], kind: registry, importName: Task, finding: INVALID_TYPE_NAME}
+  - {id: M-47, clauses: [TS-001], kind: shadow, typeName: Task, finding: TYPE_SHADOWED}
+  - {id: M-48, clauses: [TS-004], kind: resolve, type: tasks.Task, finding: UNKNOWN_TYPE}

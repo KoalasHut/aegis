@@ -2,12 +2,10 @@ id: tasks.reopen
 version: 1.0.0
 kind: command
 summary: Reopen a completed task.
-types:
-  Task: A task with identity, title, position, completion state, and urgency.
-  TaskId: The opaque identity of a task.
+types: {}
 input:
   taskId:
-    type: TaskId
+    type: id
     required: true
     description: The identity of the task to reopen.
 output:

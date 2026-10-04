@@ -1,0 +1,5 @@
+id: R-9
+kind: validator
+runs:
+  - operation: bare-capture
+    expectedFindings: [BARE_CAPTURE_REFERENCE, SCHEMA_INVALID]

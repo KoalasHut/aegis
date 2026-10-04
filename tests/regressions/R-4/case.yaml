@@ -1,0 +1,8 @@
+id: R-4
+kind: validator
+runs:
+  - {operation: 'overlay:missing-br', expectedFindings: [UNKNOWN_BR]}
+  - {operation: 'overlay:missing-contract', expectedFindings: [UNKNOWN_CONTRACT]}
+  - {operation: 'overlay:missing-decision', expectedFindings: [UNKNOWN_DECISION]}
+  - {operation: unknown-error, expectedFindings: [UNKNOWN_ERROR_CODE]}
+  - {operation: 'overlay:missing-sc', expectedFindings: [UNKNOWN_SC]}

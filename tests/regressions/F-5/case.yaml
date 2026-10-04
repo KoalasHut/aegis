@@ -1,0 +1,6 @@
+id: F-5
+kind: match
+type: datetime
+expected: '2026-10-02T09:00:00Z'
+actual: '2026-10-02T09:00:00.000Z'
+result: true

@@ -1,0 +1,11 @@
+{
+  "library": "stdlib json/datetime",
+  "observed": {
+    "datetime": "2026-10-02T09:00:00+00:00",
+    "decimalDefault": "TypeError",
+    "nullKept": {"note": null}
+  },
+  "options": "json.dumps defaults; datetime.isoformat()",
+  "runtime": "3.10.12",
+  "stack": "Python"
+}

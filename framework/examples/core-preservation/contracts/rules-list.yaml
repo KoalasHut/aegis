@@ -2,8 +2,7 @@ id: core-preservation.rules.list
 version: 1.0.0
 kind: query
 summary: List recorded domain rules.
-types:
-  Rule: A named statement with accountable ownership and review status.
+types: {}
 input: {}
 output:
   items:

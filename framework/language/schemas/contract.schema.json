@@ -33,10 +33,9 @@
         },
         "types": {
           "type": "object",
-          "minProperties": 1,
+          "propertyNames": { "pattern": "^[A-Za-z][A-Za-z0-9_]*$" },
           "additionalProperties": {
-            "type": "string",
-            "minLength": 1
+            "$ref": "types.schema.json#/$defs/typeDefinition"
           }
         },
         "input": {
@@ -148,10 +147,9 @@
         },
         "types": {
           "type": "object",
-          "minProperties": 1,
+          "propertyNames": { "pattern": "^[A-Za-z][A-Za-z0-9_]*$" },
           "additionalProperties": {
-            "type": "string",
-            "minLength": 1
+            "$ref": "types.schema.json#/$defs/typeDefinition"
           }
         },
         "semantics": {

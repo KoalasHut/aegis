@@ -1,0 +1,31 @@
+mutations:
+  - {id: MUT-01, edit: rename a record field, mode: typed, node: record, value: {titel: x}, input: true, expectedFindings: [MISSING_REQUIRED_INPUT, UNKNOWN_FIELD]}
+  - {id: MUT-02, edit: change enum literal case, mode: typed, node: enum, value: Open, input: true, expectedFindings: [INVALID_ENUM_VALUE]}
+  - {id: MUT-03, edit: drop a datetime offset, mode: typed, node: datetime, value: '2026-10-02T09:00:00', input: true, expectedFindings: [DATETIME_WITHOUT_OFFSET]}
+  - {id: MUT-04, edit: add as to an expectError step, mode: project, operation: expect-error-capture, expectedFindings: [SCHEMA_INVALID]}
+  - {id: MUT-05, edit: cite a rejected decision, mode: project, operation: rejected-decision, expectedFindings: [DECISION_NOT_APPROVED]}
+  - {id: MUT-06, edit: duplicate a capture, mode: project, operation: duplicate-capture, expectedFindings: [DUPLICATE_CAPTURE]}
+  - {id: MUT-07, edit: break a type reference, mode: type-error, type: MissingType, expectedFindings: [UNKNOWN_TYPE]}
+  - {id: MUT-08, edit: remove a required nested field, mode: typed, node: record, value: {}, input: true, expectedFindings: [MISSING_REQUIRED_INPUT]}
+  - {id: MUT-09, edit: exceed positive safe integer, mode: typed, node: integer, value: 9007199254740992, input: true, expectedFindings: [UNSAFE_INTEGER]}
+  - {id: MUT-10, edit: exceed negative safe integer, mode: typed, node: integer, value: -9007199254740992, input: true, expectedFindings: [UNSAFE_INTEGER]}
+  - {id: MUT-11, edit: use an impossible date, mode: typed, node: date, value: '2026-02-30', input: true, expectedFindings: [INVALID_TYPED_VALUE]}
+  - {id: MUT-12, edit: use an invalid duration, mode: typed, node: duration, value: two-hours, input: true, expectedFindings: [INVALID_TYPED_VALUE]}
+  - {id: MUT-13, edit: use an invalid decimal, mode: typed, node: decimal, value: one, input: true, expectedFindings: [INVALID_TYPED_VALUE]}
+  - {id: MUT-14, edit: quote a boolean, mode: typed, node: boolean, value: 'true', input: true, expectedFindings: [INVALID_TYPED_VALUE]}
+  - {id: MUT-15, edit: put length matcher on string, mode: typed, node: string, value: {$length: 1}, expectedFindings: [MATCHER_TYPE_MISMATCH]}
+  - {id: MUT-16, edit: put contains matcher on string, mode: typed, node: string, value: {$contains: [x]}, expectedFindings: [MATCHER_TYPE_MISMATCH]}
+  - {id: MUT-17, edit: put unordered matcher on record, mode: typed, node: record, value: {$unordered: []}, expectedFindings: [MATCHER_TYPE_MISMATCH]}
+  - {id: MUT-18, edit: expect null on required string, mode: typed-required, node: string, value: null, expectedFindings: [CONTRADICTORY_EXPECTATION]}
+  - {id: MUT-19, edit: expect absent on required string, mode: typed-required, node: string, value: {$absent: true}, expectedFindings: [CONTRADICTORY_EXPECTATION]}
+  - {id: MUT-20, edit: capture an unknown nested field, mode: project, operation: unknown-capture-field, expectedFindings: [UNKNOWN_CAPTURE_FIELD]}
+  - {id: MUT-21, edit: add list indexing to capture, mode: project, operation: indexed-capture, expectedFindings: [CAPTURE_PATH_INVALID]}
+  - {id: MUT-22, edit: substitute id into string, mode: project, operation: capture-mismatch, expectedFindings: [CAPTURE_TYPE_MISMATCH]}
+  - {id: MUT-23, edit: shadow a context type locally, mode: project, operation: shadow-type, expectedFindings: [TYPE_SHADOWED]}
+  - {id: MUT-24, edit: introduce a prose-only type, mode: project, operation: opaque-type, expectedFindings: [OPAQUE_TYPE]}
+  - {id: MUT-25, edit: use an unknown timezone, mode: project, operation: invalid-timezone, expectedFindings: [INVALID_TIMEZONE]}
+  - {id: MUT-26, edit: use an invalid locale tag, mode: project, operation: invalid-locale, expectedFindings: [LOCALE_COLLATION_REQUIRES_MANUAL, SCHEMA_INVALID]}
+  - {id: MUT-27, edit: cite an unknown contract, mode: project, operation: 'overlay:missing-contract', expectedFindings: [UNKNOWN_CONTRACT]}
+  - {id: MUT-28, edit: assert an unknown error code, mode: project, operation: unknown-error, expectedFindings: [UNKNOWN_ERROR_CODE]}
+  - {id: MUT-29, edit: duplicate an artifact id, mode: project, operation: 'overlay:duplicate-id', expectedFindings: [DUPLICATE_ID]}
+  - {id: MUT-30, edit: replace a string with a number, mode: typed, node: string, value: 3, input: true, expectedFindings: [INVALID_TYPED_VALUE]}

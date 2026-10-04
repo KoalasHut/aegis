@@ -1,0 +1,5 @@
+id: F-7
+kind: match
+expected: {$contains: [{state: open}, {id: a}]}
+actual: [{id: a, state: open}, {id: b, state: open}]
+result: true

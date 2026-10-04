@@ -1,0 +1,6 @@
+id: G-5
+kind: match
+type: number
+expected: 0.3
+actual: 0.30000000000000004
+result: false

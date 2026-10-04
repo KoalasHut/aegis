@@ -1,0 +1,5 @@
+id: R-5
+kind: validator
+runs:
+  - operation: 'overlay:non-approved'
+    expectedFindings: [SCENARIO_RULE_NOT_APPROVED]

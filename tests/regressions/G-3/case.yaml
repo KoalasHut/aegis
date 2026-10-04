@@ -1,0 +1,5 @@
+id: G-3
+kind: match
+expected: {note: null}
+actual: {}
+result: true

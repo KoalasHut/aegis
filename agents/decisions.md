@@ -82,3 +82,22 @@ approval: project-scope rules citing them fail validation. A project without
 exact maintenance-log hashes used by `init.py`. OD-14 through OD-19 are summarized
 in [framework decisions](../framework/decisions.md). Release 0.2.2 leaves agent
 protocol 0.1.0 and the existing full stage chain unchanged.
+
+## Aegis 0.2.3 provenance
+
+Diego approved OD-21 through OD-34 on 2026-10-03 in the current maintenance
+conversation, captured by assignment `aegis-023-release`. The reviewed plan
+SHA-256 is `836f81d6b492d1ef14cbf6f11dd7a14e63ceca7b47811b3f168a22fda7a5237e`;
+the acceptance-audit SHA-256 is
+`9c2eba21568f176c3883dfdbb22415c2d0a219951722b6678f136af395813f5e`;
+release work started from reviewed Wave 1 revision
+`58d258d30d08dfd00de6b5e5ac59b9a0916132a9`. The owner accepted the proposed
+defaults plus the orchestrator's conservative resolutions of audit S-02 through
+S-24. The fourteen authoritative semantic records are in
+[framework decisions](../framework/decisions.yaml).
+
+Release 0.2.3 does not change the agent protocol or stage chain. It completes
+the artifact-side type model and reference matcher but does not install a
+scenario runner or driver, implement imported type namespaces, or establish
+five-stack conformance. Kotlin and Swift executable serializer evidence remains
+unavailable for this release.

@@ -1,9 +1,116 @@
 # Migrate an Aegis project through 0.2.x
 
-For an existing 0.2.1 project, begin with [0.2.1 to 0.2.2](#from-021-to-022).
-For 0.2.0, apply [0.2.0 to 0.2.1](#from-020-to-021) first. For 0.1.0, perform
-the core-preservation steps below and then apply both later sections. Preserve
-historical decisions and project identity throughout.
+For an existing 0.2.2 project, begin with [0.2.2 to 0.2.3](#from-022-to-023).
+For 0.2.1, apply [0.2.1 to 0.2.2](#from-021-to-022) first; for 0.2.0, also
+apply [0.2.0 to 0.2.1](#from-020-to-021). For 0.1.0, perform the
+core-preservation steps below and then apply every later section in order.
+Preserve historical decisions and project identity throughout.
+
+## From 0.2.2 to 0.2.3
+
+This release replaces top-level-only scalar typing with a structured type tree
+and changes several comparison and warning behaviors. Adopt it in a bounded
+migration assignment. Do not rerun `init.py`: it creates new projects and is
+not an upgrade tool. Keep the original `project.json` initialization version and
+record the adopted template revision in project migration evidence.
+
+### Move reusable domain shapes into context types
+
+Add `framework/contexts/<context>/types.yaml` beside each context glossary. Move
+shared prose shapes into one structured record or enum and point contracts to
+that name. Keep contract-local `types` only for operation-specific shapes. A
+local name may not shadow a context name (`TYPE_SHADOWED`). Lists use `T[]`, maps
+use `map<T>`, and recursive named records are allowed. Inline type-expression
+unions are not; existing contract `kind: union` definitions remain supported.
+
+Qualified `<context>.<Type>` imports are reserved for a later manifest namespace
+and version contract. Do not migrate a project to qualified imports in 0.2.3 or
+claim that strict validation proves imported types resolve. Prose-only types
+remain opaque during 0.2.x and produce `OPAQUE_TYPE`; validation stops below the
+opaque boundary. Use a decision-backed warning allowance only when the migration
+must remain intentionally incomplete.
+
+Nested typed validation now reaches setup inputs, `when.input`, `then.output`,
+observation input/expect values and typed event payloads. Review new generic
+`UNKNOWN_FIELD` paths, including `[]` list-item notation. This replaces older
+direction-specific unknown-field diagnostics below structured types. Also resolve
+`UNKNOWN_TYPE`, `UNUSED_TYPE`, `INVALID_ENUM_VALUE`, `MATCHER_TYPE_MISMATCH`,
+`CONTRADICTORY_EXPECTATION`, `CAPTURE_PATH_INVALID` and
+`CAPTURE_TYPE_MISMATCH` findings.
+
+### Review null, required fields and captures
+
+For optional fields, expected `null` and `{ $absent: true }` both accept an
+absent key or explicit null. `{ $any: true }` requires a present, non-null value.
+`required: true` means present and non-null; remove required-null inputs and
+expectations. Expected objects remain partial, so this does not prove that an
+actual driver output has every required field. That complete-output check belongs
+to the phase-3 runner protocol.
+
+Capture paths traverse resolved record fields only. Remove positional paths such
+as `${items.0.id}`. Capture a map, list, record or scalar only as a complete typed
+value and substitute it into an equal resolved target type; `id` and `string` are
+not interchangeable. A missing optional captured value will be a setup error at
+runtime. Event expectations may remain string references or use the new typed
+payload form:
+
+```yaml
+then:
+  output: {task: {id: "${task.task.id}"}}
+  events:
+    - event: tasks.task-completed@1
+      input: {taskId: "${task.task.id}"}
+```
+
+Event lists still cover only the `when` operation and remain exact unless
+`eventsMatch: contains` is set.
+
+### Recheck duration and numeric expectations
+
+Calendar durations now normalize to years, months and fixed seconds. Padding and
+explicit zero components do not matter; fixed components normalize even beside a
+calendar component. In particular, `P1M1D` now equals `P1MT24H`, while `P1Y`
+does not equal `P12M` and `P1M` does not equal `P30D`. Review scenarios that
+depended on literal comparison of mixed calendar/fixed values.
+
+OD-27 supersedes OD-17 for `number` and `decimal`. Comparison is exact after
+normalizing exponent notation, trailing zeros and signed zero, with no tolerance.
+`0.30000000000000004` therefore does not match `0.3`. Quote scenario decimal
+literals when exact source precision matters; the canonical future driver wire
+form is a decimal string. Integers are intrinsically restricted to the inclusive
+JSON safe range `-(2^53 - 1)` through `2^53 - 1`; migrate larger quantities to a
+domain type with a lossless representation rather than relying on host integers.
+
+### Review strings, enums, time zones and ordering
+
+`string` compares after NFC normalization without trimming or case folding.
+`id` and enum values compare raw; enums are closed and case-sensitive. Review
+identifiers that previously relied on normalized Unicode and states that relied
+on case-insensitive comparison.
+
+Scenarios may declare `given.timezone` with an IANA name. Rules involving local
+date boundaries state whose zone applies and must not inherit the host default.
+Validation uses the host's available `zoneinfo` data; preserve tzdb identity and
+DST behavior as future runner/driver evidence. Text-ordering rules are reviewed
+under CPR-008 and declare `ordinal` or a named locale. Only ordinal NFC code-point
+ordering is portable for automated 0.2.3 assertions; keep locale-aware ordering
+manual until a versioned collation capability exists.
+
+### Adopt finding suppression and bounded allowances
+
+The validator shows the highest-priority finding for one root cause. Use
+`--verbose-findings` to inspect suppressed dependent findings; verbose output
+does not alter counts or exit behavior. A `validation-allow.yaml` entry may allow
+one same-scope warning by code and bounded path glob when it cites an approved
+decision and explains the reason. Allowed warnings remain visible but do not fail
+`--strict`. Errors cannot be allowed. Remove stale or duplicate allowances and
+fix invalid, overbroad or cross-scope entries.
+
+Finish by reinstalling `requirements-dev.txt`, running the full tests, strict
+validation and history-aware validation against the reviewed base, and reviewing
+every changed diagnostic. The reference matcher still does not execute scenarios.
+No runner, driver, imported-type resolver, conformance report or matrix is added;
+Kotlin and Swift serializer corpora remain outstanding evidence.
 
 ## From 0.1.0 to 0.2.0
 

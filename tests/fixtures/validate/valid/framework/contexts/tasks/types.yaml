@@ -1,0 +1,10 @@
+types:
+  Task:
+    description: A task with stable identity and a meaningful title.
+    fields:
+      id:
+        type: id
+        required: true
+      title:
+        type: string
+        required: true

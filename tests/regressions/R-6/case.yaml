@@ -1,0 +1,5 @@
+id: R-6
+kind: validator
+runs:
+  - {operation: duplicate-capture, expectedFindings: [DUPLICATE_CAPTURE]}
+  - {operation: expect-error-capture, expectedFindings: [SCHEMA_INVALID]}
