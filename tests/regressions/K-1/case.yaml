@@ -1,0 +1,8 @@
+id: K-1
+kind: production
+operation: MUT-31
+cli: true
+exitNonzero: true
+noTraceback: true
+expectedFindings:
+  - {severity: error, code: UNKNOWN_TYPE, path: framework/contexts/tasks/types.yaml, fieldPath: types.Task}

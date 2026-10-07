@@ -1,10 +1,49 @@
 # Migrate an Aegis project through 0.2.x
 
+For an existing 0.2.3 project, begin with [0.2.3 to 0.2.4](#from-023-to-024).
 For an existing 0.2.2 project, begin with [0.2.2 to 0.2.3](#from-022-to-023).
 For 0.2.1, apply [0.2.1 to 0.2.2](#from-021-to-022) first; for 0.2.0, also
 apply [0.2.0 to 0.2.1](#from-020-to-021). For 0.1.0, perform the
 core-preservation steps below and then apply every later section in order.
 Preserve historical decisions and project identity throughout.
+
+## From 0.2.3 to 0.2.4
+
+Adopt this release in a bounded migration assignment. Do not rerun `init.py`: it
+creates a new project and does not upgrade populated project logs.
+
+### Keep matcher syntax in expectation positions
+
+Replace every mapping key beginning with `$` in `given.seed.input`, setup-step input,
+`when.input`, observation input, and other concrete inputs with an actual value.
+`$any`, `$absent`, `$contains`, and `$unordered` remain valid only in
+`then.output`, `then.observe[].expect`, and `then.events[].input`. Validation
+reports `MATCHER_IN_INPUT` at the concrete input location.
+
+### Review Unicode declarations and map literals
+
+Enum declarations must be unique after NFC normalization. Rename or remove a
+composed/decomposed duplicate before validation. Enum membership remains raw and
+case-sensitive at runtime, so NFC-equivalent values are still distinct enum
+members when declarations are otherwise valid.
+
+Typed `map<T>` keys compare after NFC normalization. Remove NFC-colliding keys
+from a single scenario map literal. This rule applies only to declared maps:
+record field names and `id` values remain raw.
+
+### Treat stricter diagnostics as migration work
+
+Fix `UNKNOWN_TYPE` at the context type definition or direct contract field, and
+fix `UNSATISFIABLE_TYPE` by breaking a required-record-only cycle with an
+optional, list, or map edge when that preserves the intended domain model. The
+validator continues independent artifact checks after a malformed declaration;
+the deterministic fuzz and mutation tests are bounded evidence, not a promise
+that arbitrary malformed input cannot fail.
+
+The serializer manifest now records checked-in probes for Python, JavaScript,
+.NET and Kotlin/JVM. Swift remains a pending stack until a Swift/Foundation probe
+is run. No runner, driver, complete-output validation, report or support matrix
+is introduced by this migration.
 
 ## From 0.2.2 to 0.2.3
 

@@ -1,31 +1,41 @@
 mutations:
-  - {id: MUT-01, edit: rename a record field, mode: typed, node: record, value: {titel: x}, input: true, expectedFindings: [MISSING_REQUIRED_INPUT, UNKNOWN_FIELD]}
-  - {id: MUT-02, edit: change enum literal case, mode: typed, node: enum, value: Open, input: true, expectedFindings: [INVALID_ENUM_VALUE]}
-  - {id: MUT-03, edit: drop a datetime offset, mode: typed, node: datetime, value: '2026-10-02T09:00:00', input: true, expectedFindings: [DATETIME_WITHOUT_OFFSET]}
-  - {id: MUT-04, edit: add as to an expectError step, mode: project, operation: expect-error-capture, expectedFindings: [SCHEMA_INVALID]}
-  - {id: MUT-05, edit: cite a rejected decision, mode: project, operation: rejected-decision, expectedFindings: [DECISION_NOT_APPROVED]}
-  - {id: MUT-06, edit: duplicate a capture, mode: project, operation: duplicate-capture, expectedFindings: [DUPLICATE_CAPTURE]}
-  - {id: MUT-07, edit: break a type reference, mode: type-error, type: MissingType, expectedFindings: [UNKNOWN_TYPE]}
-  - {id: MUT-08, edit: remove a required nested field, mode: typed, node: record, value: {}, input: true, expectedFindings: [MISSING_REQUIRED_INPUT]}
-  - {id: MUT-09, edit: exceed positive safe integer, mode: typed, node: integer, value: 9007199254740992, input: true, expectedFindings: [UNSAFE_INTEGER]}
-  - {id: MUT-10, edit: exceed negative safe integer, mode: typed, node: integer, value: -9007199254740992, input: true, expectedFindings: [UNSAFE_INTEGER]}
-  - {id: MUT-11, edit: use an impossible date, mode: typed, node: date, value: '2026-02-30', input: true, expectedFindings: [INVALID_TYPED_VALUE]}
-  - {id: MUT-12, edit: use an invalid duration, mode: typed, node: duration, value: two-hours, input: true, expectedFindings: [INVALID_TYPED_VALUE]}
-  - {id: MUT-13, edit: use an invalid decimal, mode: typed, node: decimal, value: one, input: true, expectedFindings: [INVALID_TYPED_VALUE]}
-  - {id: MUT-14, edit: quote a boolean, mode: typed, node: boolean, value: 'true', input: true, expectedFindings: [INVALID_TYPED_VALUE]}
-  - {id: MUT-15, edit: put length matcher on string, mode: typed, node: string, value: {$length: 1}, expectedFindings: [MATCHER_TYPE_MISMATCH]}
-  - {id: MUT-16, edit: put contains matcher on string, mode: typed, node: string, value: {$contains: [x]}, expectedFindings: [MATCHER_TYPE_MISMATCH]}
-  - {id: MUT-17, edit: put unordered matcher on record, mode: typed, node: record, value: {$unordered: []}, expectedFindings: [MATCHER_TYPE_MISMATCH]}
-  - {id: MUT-18, edit: expect null on required string, mode: typed-required, node: string, value: null, expectedFindings: [CONTRADICTORY_EXPECTATION]}
-  - {id: MUT-19, edit: expect absent on required string, mode: typed-required, node: string, value: {$absent: true}, expectedFindings: [CONTRADICTORY_EXPECTATION]}
-  - {id: MUT-20, edit: capture an unknown nested field, mode: project, operation: unknown-capture-field, expectedFindings: [UNKNOWN_CAPTURE_FIELD]}
-  - {id: MUT-21, edit: add list indexing to capture, mode: project, operation: indexed-capture, expectedFindings: [CAPTURE_PATH_INVALID]}
-  - {id: MUT-22, edit: substitute id into string, mode: project, operation: capture-mismatch, expectedFindings: [CAPTURE_TYPE_MISMATCH]}
-  - {id: MUT-23, edit: shadow a context type locally, mode: project, operation: shadow-type, expectedFindings: [TYPE_SHADOWED]}
-  - {id: MUT-24, edit: introduce a prose-only type, mode: project, operation: opaque-type, expectedFindings: [OPAQUE_TYPE]}
-  - {id: MUT-25, edit: use an unknown timezone, mode: project, operation: invalid-timezone, expectedFindings: [INVALID_TIMEZONE]}
-  - {id: MUT-26, edit: use an invalid locale tag, mode: project, operation: invalid-locale, expectedFindings: [LOCALE_COLLATION_REQUIRES_MANUAL, SCHEMA_INVALID]}
-  - {id: MUT-27, edit: cite an unknown contract, mode: project, operation: 'overlay:missing-contract', expectedFindings: [UNKNOWN_CONTRACT]}
-  - {id: MUT-28, edit: assert an unknown error code, mode: project, operation: unknown-error, expectedFindings: [UNKNOWN_ERROR_CODE]}
-  - {id: MUT-29, edit: duplicate an artifact id, mode: project, operation: 'overlay:duplicate-id', expectedFindings: [DUPLICATE_ID]}
-  - {id: MUT-30, edit: replace a string with a number, mode: typed, node: string, value: 3, input: true, expectedFindings: [INVALID_TYPED_VALUE]}
+  - {id: MUT-01, edit: rename a record field, operation: MUT-01, expectedFindings: [{severity: error, code: MISSING_REQUIRED_INPUT, path: framework/contexts/tasks/scenarios/tasks.yaml, fieldPath: when.input.title}, {severity: error, code: UNKNOWN_FIELD, path: framework/contexts/tasks/scenarios/tasks.yaml, fieldPath: when.input.titel}]}
+  - {id: MUT-02, edit: change enum literal case, operation: MUT-02, expectedFindings: [{severity: error, code: INVALID_ENUM_VALUE, path: framework/contexts/tasks/scenarios/tasks.yaml, fieldPath: when.input.corpus}]}
+  - {id: MUT-03, edit: drop a datetime offset, operation: MUT-03, expectedFindings: [{severity: error, code: DATETIME_WITHOUT_OFFSET, path: framework/contexts/tasks/scenarios/tasks.yaml, fieldPath: when.input.corpus}]}
+  - {id: MUT-04, edit: add as to an expectError step, operation: MUT-04, expectedFindings: [{severity: error, code: SCHEMA_INVALID, path: framework/contexts/tasks/scenarios/tasks.yaml, fieldPath: null}]}
+  - {id: MUT-05, edit: cite a rejected decision, operation: MUT-05, expectedFindings: [{severity: error, code: DECISION_NOT_APPROVED, path: framework/contexts/tasks/rules/tasks.yaml, fieldPath: null}]}
+  - {id: MUT-06, edit: duplicate a capture, operation: MUT-06, expectedFindings: [{severity: error, code: DUPLICATE_CAPTURE, path: framework/contexts/tasks/scenarios/tasks.yaml, fieldPath: null}]}
+  - {id: MUT-07, edit: break a type reference, operation: MUT-07, expectedFindings: [{severity: error, code: UNKNOWN_TYPE, path: framework/blocks/tasks/contracts/add.yaml, fieldPath: input.corpus}]}
+  - {id: MUT-08, edit: remove a required nested field, operation: MUT-08, expectedFindings: [{severity: error, code: MISSING_REQUIRED_INPUT, path: framework/contexts/tasks/scenarios/tasks.yaml, fieldPath: when.input.corpus.title}]}
+  - {id: MUT-09, edit: exceed positive safe integer, operation: MUT-09, expectedFindings: [{severity: error, code: UNSAFE_INTEGER, path: framework/contexts/tasks/scenarios/tasks.yaml, fieldPath: when.input.corpus}]}
+  - {id: MUT-10, edit: exceed negative safe integer, operation: MUT-10, expectedFindings: [{severity: error, code: UNSAFE_INTEGER, path: framework/contexts/tasks/scenarios/tasks.yaml, fieldPath: when.input.corpus}]}
+  - {id: MUT-11, edit: use an impossible date, operation: MUT-11, expectedFindings: [{severity: error, code: INVALID_TYPED_VALUE, path: framework/contexts/tasks/scenarios/tasks.yaml, fieldPath: when.input.corpus}]}
+  - {id: MUT-12, edit: use an invalid duration, operation: MUT-12, expectedFindings: [{severity: error, code: INVALID_TYPED_VALUE, path: framework/contexts/tasks/scenarios/tasks.yaml, fieldPath: when.input.corpus}]}
+  - {id: MUT-13, edit: use an invalid decimal, operation: MUT-13, expectedFindings: [{severity: error, code: INVALID_TYPED_VALUE, path: framework/contexts/tasks/scenarios/tasks.yaml, fieldPath: when.input.corpus}]}
+  - {id: MUT-14, edit: quote a boolean, operation: MUT-14, expectedFindings: [{severity: error, code: INVALID_TYPED_VALUE, path: framework/contexts/tasks/scenarios/tasks.yaml, fieldPath: when.input.corpus}]}
+  - {id: MUT-15, edit: put length matcher on string, operation: MUT-15, expectedFindings: [{severity: error, code: MATCHER_TYPE_MISMATCH, path: framework/contexts/tasks/scenarios/tasks.yaml, fieldPath: then.output.corpus}]}
+  - {id: MUT-16, edit: put contains matcher on string, operation: MUT-16, expectedFindings: [{severity: error, code: MATCHER_TYPE_MISMATCH, path: framework/contexts/tasks/scenarios/tasks.yaml, fieldPath: then.output.corpus}]}
+  - {id: MUT-17, edit: put unordered matcher on record, operation: MUT-17, expectedFindings: [{severity: error, code: MATCHER_TYPE_MISMATCH, path: framework/contexts/tasks/scenarios/tasks.yaml, fieldPath: then.output.corpus}]}
+  - {id: MUT-18, edit: expect null on required string, operation: MUT-18, expectedFindings: [{severity: error, code: CONTRADICTORY_EXPECTATION, path: framework/contexts/tasks/scenarios/tasks.yaml, fieldPath: then.output.corpus}]}
+  - {id: MUT-19, edit: expect absent on required string, operation: MUT-19, expectedFindings: [{severity: error, code: CONTRADICTORY_EXPECTATION, path: framework/contexts/tasks/scenarios/tasks.yaml, fieldPath: then.output.corpus}]}
+  - {id: MUT-20, edit: capture an unknown nested field, operation: MUT-20, expectedFindings: [{severity: error, code: UNKNOWN_CAPTURE_FIELD, path: framework/contexts/tasks/scenarios/tasks.yaml, fieldPath: when.input.title}]}
+  - {id: MUT-21, edit: add list indexing to capture, operation: MUT-21, expectedFindings: [{severity: error, code: CAPTURE_PATH_INVALID, path: framework/contexts/tasks/scenarios/tasks.yaml, fieldPath: when.input.title}]}
+  - {id: MUT-22, edit: substitute id into string, operation: MUT-22, expectedFindings: [{severity: error, code: CAPTURE_TYPE_MISMATCH, path: framework/contexts/tasks/scenarios/tasks.yaml, fieldPath: when.input.title}]}
+  - {id: MUT-23, edit: shadow a context type locally, operation: MUT-23, expectedFindings: [{severity: error, code: TYPE_SHADOWED, path: framework/blocks/tasks/contracts/add.yaml, fieldPath: types.Task}]}
+  - {id: MUT-24, edit: introduce a prose-only type, operation: MUT-24, expectedFindings: [{severity: warning, code: OPAQUE_TYPE, path: framework/blocks/tasks/contracts/add.yaml, fieldPath: null}]}
+  - {id: MUT-25, edit: use an unknown timezone, operation: MUT-25, expectedFindings: [{severity: error, code: INVALID_TIMEZONE, path: framework/contexts/tasks/scenarios/tasks.yaml, fieldPath: null}]}
+  - {id: MUT-26, edit: use an invalid locale tag, operation: MUT-26, expectedFindings: [{severity: error, code: SCHEMA_INVALID, path: framework/contexts/tasks/rules/tasks.yaml, fieldPath: null}]}
+  - {id: MUT-27, edit: cite an unknown contract, operation: MUT-27, expectedFindings: [{severity: error, code: UNKNOWN_CONTRACT, path: framework/contexts/tasks/scenarios/missing-contract.yaml, fieldPath: null}]}
+  - {id: MUT-28, edit: assert an unknown error code, operation: MUT-28, expectedFindings: [{severity: error, code: UNKNOWN_ERROR_CODE, path: framework/contexts/tasks/scenarios/tasks.yaml, fieldPath: null}]}
+  - {id: MUT-29, edit: duplicate an artifact id, operation: MUT-29, expectedFindings: [{severity: error, code: DUPLICATE_ID, path: framework/contexts/tasks/scenarios/duplicate.yaml, fieldPath: null}]}
+  - {id: MUT-30, edit: replace a string with a number, operation: MUT-30, expectedFindings: [{severity: error, code: INVALID_TYPED_VALUE, path: framework/contexts/tasks/scenarios/tasks.yaml, fieldPath: when.input.corpus}]}
+  - {id: MUT-31, edit: typo a context field type, operation: MUT-31, expectedFindings: [{severity: error, code: UNKNOWN_TYPE, path: framework/contexts/tasks/types.yaml, fieldPath: types.Task}]}
+  - {id: MUT-32, edit: typo a contract field type, operation: MUT-32, expectedFindings: [{severity: error, code: UNKNOWN_TYPE, path: framework/blocks/tasks/contracts/list.yaml, fieldPath: output.items}]}
+  - {id: MUT-33, edit: put $any in a setup input, operation: MUT-33, expectedFindings: [{severity: error, code: MATCHER_IN_INPUT, path: framework/contexts/tasks/scenarios/tasks.yaml, fieldPath: 'given.steps[0].input.title'}]}
+  - {id: MUT-34, edit: put $absent in an optional when input, operation: MUT-34, expectedFindings: [{severity: error, code: MATCHER_IN_INPUT, path: framework/contexts/tasks/scenarios/tasks.yaml, fieldPath: when.input.dueAt}]}
+  - {id: MUT-35, edit: duplicate an enum declaration value, operation: MUT-35, expectedFindings: [{severity: error, code: INVALID_TYPE_DEFINITION, path: framework/contexts/tasks/types.yaml, fieldPath: types.TaskState}]}
+  - {id: MUT-36, edit: interpolate a capture token, operation: MUT-36, expectedFindings: [{severity: error, code: INVALID_CAPTURE_REFERENCE, path: framework/contexts/tasks/scenarios/tasks.yaml, fieldPath: when.input.title}]}
+  - {id: MUT-37, edit: collide map keys after NFC, operation: MUT-37, expectedFindings: [{severity: error, code: DUPLICATE_MAP_KEY, path: framework/contexts/tasks/scenarios/tasks.yaml, fieldPath: then.output.corpus}]}
+  - {id: MUT-38, edit: collide enum declaration values after NFC, operation: MUT-38, expectedFindings: [{severity: error, code: INVALID_TYPE_DEFINITION, path: framework/contexts/tasks/types.yaml, fieldPath: types.TaskState}]}
+  - {id: MUT-39, edit: add an unsatisfiable self reference, operation: MUT-39, expectedFindings: [{severity: error, code: UNSATISFIABLE_TYPE, path: framework/contexts/tasks/types.yaml, fieldPath: types.Node}]}
+  - {id: MUT-40, edit: add unsatisfiable mutual references, operation: MUT-40, expectedFindings: [{severity: error, code: UNSATISFIABLE_TYPE, path: framework/contexts/tasks/types.yaml, fieldPath: types.A}, {severity: error, code: UNSATISFIABLE_TYPE, path: framework/contexts/tasks/types.yaml, fieldPath: types.B}]}

@@ -39,6 +39,67 @@ _DURATION = re.compile(
 )
 
 
+def normalized_map_key_collisions(value, path=()):
+    """Return location-bearing NFC-equivalent key groups from one map.
+
+    The helper is public so validators and runners can turn the same condition
+    into their layer-specific ``DUPLICATE_MAP_KEY`` or contract finding.
+    ``path`` identifies the map in its typed value tree. Non-string keys are
+    ignored here and rejected cleanly by :func:`match`; JSON keys are strings.
+    """
+    if not isinstance(value, Mapping):
+        return ()
+    groups = {}
+    for key in value:
+        if isinstance(key, str):
+            groups.setdefault(unicodedata.normalize("NFC", key), []).append(key)
+    return tuple({"path": tuple(path), "normalizedKey": normalized, "keys": tuple(keys)}
+                 for normalized, keys in groups.items() if len(keys) > 1)
+
+
+def typed_map_key_collisions(value, type_tree, registry=None, path=()):
+    """Return every map-key collision in a complete resolved typed value."""
+    node = resolve_type(type_tree, registry or {}) if type_tree is not None else None
+    if not isinstance(node, Mapping):
+        return ()
+    kind = node.get("kind")
+    collisions = []
+    if kind == "map" and isinstance(value, Mapping):
+        collisions.extend(normalized_map_key_collisions(value, path))
+        for key, child in value.items():
+            collisions.extend(typed_map_key_collisions(
+                child, node["value"], registry, tuple(path) + (key,)))
+    elif kind == "record" and isinstance(value, Mapping):
+        for key, child_type in node.get("fields", {}).items():
+            if key in value:
+                collisions.extend(typed_map_key_collisions(
+                    value[key], child_type, registry, tuple(path) + (key,)))
+    elif kind == "list" and isinstance(value, list):
+        for index, child in enumerate(value):
+            collisions.extend(typed_map_key_collisions(
+                child, node["item"], registry, tuple(path) + (index,)))
+    return tuple(collisions)
+
+
+def _has_non_string_map_key(value, type_tree, registry):
+    node = resolve_type(type_tree, registry) if type_tree is not None else None
+    if not isinstance(node, Mapping):
+        return False
+    kind = node.get("kind")
+    if kind == "map" and isinstance(value, Mapping):
+        return (any(not isinstance(key, str) for key in value)
+                or any(_has_non_string_map_key(child, node["value"], registry)
+                       for child in value.values()))
+    if kind == "record" and isinstance(value, Mapping):
+        return any(key in value and _has_non_string_map_key(
+            value[key], child_type, registry)
+                   for key, child_type in node.get("fields", {}).items())
+    if kind == "list" and isinstance(value, list):
+        return any(_has_non_string_map_key(child, node["item"], registry)
+                   for child in value)
+    return False
+
+
 def match(expected, actual, type_tree=None, registry=None, **compatibility):
     """Return whether *actual* satisfies an Aegis expected value.
 
@@ -52,7 +113,14 @@ def match(expected, actual, type_tree=None, registry=None, **compatibility):
         type_tree = compatibility["declared_type"]
     elif compatibility:
         raise TypeError("unexpected keyword arguments: " + ", ".join(compatibility))
-    return _match(expected, actual, type_tree, registry or {})
+    registry = registry or {}
+    node = resolve_type(type_tree, registry) if type_tree is not None else None
+    if (typed_map_key_collisions(expected, node, registry)
+            or typed_map_key_collisions(actual, node, registry)
+            or _has_non_string_map_key(expected, node, registry)
+            or _has_non_string_map_key(actual, node, registry)):
+        return False
+    return _match(expected, actual, node, registry)
 
 
 def scalar_validation_error(value, declared_type):
@@ -102,6 +170,17 @@ def _match(expected, actual, declared_type, registry):
     if isinstance(expected, Mapping):
         if actual is _MISSING or not isinstance(actual, Mapping):
             return False
+        if node is not None and node.get("kind") == "map":
+            actual_by_key = {
+                unicodedata.normalize("NFC", key): value
+                for key, value in actual.items()
+            }
+            for key, value in expected.items():
+                normalized = unicodedata.normalize("NFC", key)
+                candidate = actual_by_key.get(normalized, _MISSING)
+                if not _match(value, candidate, node["value"], registry):
+                    return False
+            return True
         for key, value in expected.items():
             candidate = actual[key] if key in actual else _MISSING
             if not _match(value, candidate, _child_type(node, key), registry):
@@ -177,8 +256,6 @@ def _child_type(declared_type, key=None):
         return None
     if key is not None and declared_type.get("kind") == "record":
         return declared_type.get("fields", {}).get(key)
-    if key is not None and declared_type.get("kind") == "map":
-        return declared_type["value"]
     if key is None and declared_type.get("kind") == "list":
         return declared_type["item"]
     return None

@@ -5,6 +5,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 import jsonschema
 import yaml
@@ -740,6 +741,53 @@ class ValidationTests(unittest.TestCase):
                 result, codes, _ = self.codes(root)
                 self.assertIn("INVALID_CAPTURE_REFERENCE", codes)
 
+    def test_interpolated_capture_has_one_exact_location_and_suppressed_schema_detail(self):
+        root = self.make_root()
+        path = root / "framework/contexts/tasks/scenarios/tasks.yaml"
+        scenarios = yaml.safe_load(path.read_text(encoding="utf-8"))
+        scenarios[0]["when"]["input"]["title"] = "after ${task1.task.id}"
+        path.write_text(yaml.safe_dump(scenarios, sort_keys=False), encoding="utf-8")
+
+        result, codes, payload = self.codes(root)
+        self.assertNotEqual(0, result.returncode)
+        self.assertEqual({"INVALID_CAPTURE_REFERENCE"}, codes)
+        self.assertEqual(1, len(payload["findings"]))
+        finding = payload["findings"][0]
+        self.assertEqual("when.input.title", finding["fieldPath"])
+
+        verbose = self.run_validator(root, True, "--verbose-findings")
+        verbose_findings = json.loads(verbose.stdout)["findings"]
+        self.assertEqual(["INVALID_CAPTURE_REFERENCE", "SCHEMA_INVALID"],
+                         [item["code"] for item in verbose_findings])
+        self.assertEqual({"when.input.title"},
+                         {item["fieldPath"] for item in verbose_findings})
+        self.assertEqual(1, len({item["cause"] for item in verbose_findings}))
+        self.assertTrue(next(item for item in verbose_findings
+                             if item["code"] == "SCHEMA_INVALID")["suppressed"])
+
+    def test_nested_malformed_capture_locations_remain_distinct(self):
+        root = self.make_root()
+        contract_path = root / "framework/blocks/tasks/contracts/add.yaml"
+        contract = yaml.safe_load(contract_path.read_text(encoding="utf-8"))
+        contract["input"]["title"]["type"] = "map<string[]>"
+        contract_path.write_text(yaml.safe_dump(contract, sort_keys=False), encoding="utf-8")
+        path = root / "framework/contexts/tasks/scenarios/tasks.yaml"
+        scenarios = yaml.safe_load(path.read_text(encoding="utf-8"))
+        scenarios[0]["when"]["input"]["title"] = {
+            "nested": ["before ${task1.task.id}", "after ${task2.task.id}"],
+        }
+        path.write_text(yaml.safe_dump(scenarios, sort_keys=False), encoding="utf-8")
+
+        result, codes, payload = self.codes(root)
+        self.assertNotEqual(0, result.returncode)
+        self.assertEqual({"INVALID_CAPTURE_REFERENCE"}, codes)
+        self.assertEqual(2, len(payload["findings"]))
+        self.assertEqual(
+            {"when.input.title.nested[0]", "when.input.title.nested[1]"},
+            {item["fieldPath"] for item in payload["findings"]},
+        )
+        self.assertEqual(2, len({item["cause"] for item in payload["findings"]}))
+
     def test_project_initialization_and_maintenance_decision_guards(self):
         root = self.make_root()
         (root / "project.json").unlink()
@@ -838,6 +886,81 @@ class ValidationTests(unittest.TestCase):
              "INVALID_TYPED_VALUE"},
             {item["code"] for item in findings.items},
         )
+
+    def test_typed_map_literals_report_each_nfc_collision_at_the_map_location(self):
+        string = {"kind": "scalar", "name": "string"}
+        string_map = {"kind": "map", "value": string}
+        root_type = {
+            "kind": "record",
+            "fields": {
+                "labels": string_map,
+                "groups": {"kind": "list", "item": string_map},
+                "nested": {"kind": "map", "value": string_map},
+            },
+            "required": [],
+        }
+        collision = {"café": "one", "cafe\u0301": "two"}
+        findings = validator.Findings()
+        validator.validate_typed_value(
+            {
+                "labels": collision,
+                "groups": [collision],
+                "nested": {"outer": collision},
+            },
+            root_type, None, Path("scenario.yaml"), "then.output", findings,
+        )
+
+        duplicates = [item for item in findings.items
+                      if item["code"] == "DUPLICATE_MAP_KEY"]
+        self.assertEqual(3, len(duplicates))
+        self.assertEqual({"scenario.yaml"}, {item["path"] for item in duplicates})
+        self.assertEqual(
+            {"then.output.labels", "then.output.groups[0]", "then.output.nested.outer"},
+            {item["fieldPath"] for item in duplicates},
+        )
+
+    def test_map_key_normalization_does_not_apply_to_single_keys_or_record_fields(self):
+        string = {"kind": "scalar", "name": "string"}
+        string_map = {"kind": "map", "value": string}
+        for literal in ({"café": "one"}, {"cafe\u0301": "one"}):
+            findings = validator.Findings()
+            validator.validate_typed_value(
+                literal, string_map, None, Path("scenario.yaml"), "then.output.labels", findings,
+            )
+            self.assertEqual([], findings.items)
+
+        record = {
+            "kind": "record",
+            "fields": {"café": string, "cafe\u0301": string},
+            "required": [],
+        }
+        findings = validator.Findings()
+        validator.validate_typed_value(
+            {"café": "one", "cafe\u0301": "two"}, record, None,
+            Path("scenario.yaml"), "then.output.item", findings,
+        )
+        self.assertEqual([], findings.items)
+
+    def test_scenario_expected_map_collision_has_one_definition_location_finding(self):
+        root = self.make_root()
+        contract_path = root / "framework/blocks/tasks/contracts/add.yaml"
+        contract = yaml.safe_load(contract_path.read_text(encoding="utf-8"))
+        contract["output"]["item"]["type"] = "map<string>"
+        contract_path.write_text(yaml.safe_dump(contract, sort_keys=False), encoding="utf-8")
+        scenario_path = root / "framework/contexts/tasks/scenarios/tasks.yaml"
+        scenarios = yaml.safe_load(scenario_path.read_text(encoding="utf-8"))
+        scenarios[0]["then"]["output"]["item"] = {
+            "café": "one", "cafe\u0301": "two",
+        }
+        scenario_path.write_text(yaml.safe_dump(scenarios, sort_keys=False), encoding="utf-8")
+
+        result, codes, payload = self.codes(root)
+        self.assertNotEqual(0, result.returncode)
+        self.assertEqual({"DUPLICATE_MAP_KEY"}, codes)
+        self.assertEqual(1, len(payload["findings"]))
+        self.assertEqual("framework/contexts/tasks/scenarios/tasks.yaml",
+                         payload["findings"][0]["path"])
+        self.assertEqual("then.output.item", payload["findings"][0]["fieldPath"])
 
     def test_capture_paths_are_type_checked_at_every_segment(self):
         string = {"kind": "scalar", "name": "string"}
@@ -947,6 +1070,388 @@ class ValidationTests(unittest.TestCase):
         contract_path.write_text(yaml.safe_dump(contract, sort_keys=False), encoding="utf-8")
         _, codes, _ = self.codes(root)
         self.assertIn("OPAQUE_TYPE", codes)
+
+    def test_registry_preflight_reports_k1_k2_and_poisoned_types_once_at_definition(self):
+        root = self.make_root()
+        types_path = root / "framework/contexts/tasks/types.yaml"
+        types = yaml.safe_load(types_path.read_text(encoding="utf-8"))
+        types["types"]["Task"]["fields"]["dueAt"] = {"type": "datetim"}
+        types_path.write_text(yaml.safe_dump(types, sort_keys=False), encoding="utf-8")
+        result, codes, payload = self.codes(root)
+        self.assertNotEqual(0, result.returncode)
+        self.assertEqual({"UNKNOWN_TYPE"}, codes)
+        self.assertEqual(1, len(payload["findings"]))
+        self.assertEqual("framework/contexts/tasks/types.yaml", payload["findings"][0]["path"])
+
+        root = self.make_root()
+        contract_path = root / "framework/blocks/tasks/contracts/list.yaml"
+        contract = yaml.safe_load(contract_path.read_text(encoding="utf-8"))
+        contract["output"]["items"]["type"] = "Taks[]"
+        contract_path.write_text(yaml.safe_dump(contract, sort_keys=False), encoding="utf-8")
+        result, codes, payload = self.codes(root)
+        self.assertNotEqual(0, result.returncode)
+        self.assertEqual({"UNKNOWN_TYPE"}, codes)
+        self.assertEqual(1, len(payload["findings"]))
+        self.assertEqual("framework/blocks/tasks/contracts/list.yaml",
+                         payload["findings"][0]["path"])
+
+    def test_matchers_are_rejected_only_in_concrete_inputs(self):
+        concrete_cases = (
+            ("when.input.title", lambda scenario: scenario["when"]["input"].__setitem__(
+                "title", {"$any": True})),
+            ("when.input.title", lambda scenario: scenario["when"]["input"].__setitem__(
+                "title", {"$absent": True})),
+            ("given.steps[0].input.title", lambda scenario: scenario.__setitem__(
+                "given", {"steps": [{"command": "tasks.add",
+                                      "input": {"title": {"$any": True}}}]})),
+            ("given.seed.input.title", lambda scenario: scenario["given"].__setitem__(
+                "seed", {"contract": "tasks.seed", "input": {"title": {"$any": True}}})),
+            ("then.observe[0].input.title", lambda scenario: scenario["then"]["observe"][0].__setitem__(
+                "input", {"title": {"$any": True}})),
+        )
+        for location, mutate in concrete_cases:
+            with self.subTest(location=location):
+                root = self.make_root()
+                if location.startswith("given.seed"):
+                    contract_path = root / "framework/blocks/tasks/contracts/seed.yaml"
+                    contract = yaml.safe_load(contract_path.read_text(encoding="utf-8"))
+                    contract["input"]["title"] = {
+                        "type": "string", "required": True, "description": "Seed title.",
+                    }
+                    contract_path.write_text(yaml.safe_dump(contract, sort_keys=False), encoding="utf-8")
+                if location.startswith("then.observe"):
+                    contract_path = root / "framework/blocks/tasks/contracts/list.yaml"
+                    contract = yaml.safe_load(contract_path.read_text(encoding="utf-8"))
+                    contract["input"]["title"] = {
+                        "type": "string", "required": True, "description": "Filter title.",
+                    }
+                    contract_path.write_text(yaml.safe_dump(contract, sort_keys=False), encoding="utf-8")
+                scenario_path = root / "framework/contexts/tasks/scenarios/tasks.yaml"
+                scenarios = yaml.safe_load(scenario_path.read_text(encoding="utf-8"))
+                mutate(scenarios[0])
+                scenario_path.write_text(yaml.safe_dump(scenarios, sort_keys=False), encoding="utf-8")
+                result, codes, payload = self.codes(root)
+                self.assertNotEqual(0, result.returncode)
+                self.assertEqual({"MATCHER_IN_INPUT"}, codes)
+                self.assertEqual(location, payload["findings"][0]["fieldPath"])
+
+        root = self.make_root()
+        scenario_path = root / "framework/contexts/tasks/scenarios/tasks.yaml"
+        scenarios = yaml.safe_load(scenario_path.read_text(encoding="utf-8"))
+        scenarios[0]["then"]["output"]["item"] = {"$any": True}
+        scenario_path.write_text(yaml.safe_dump(scenarios, sort_keys=False), encoding="utf-8")
+        result, codes, _ = self.codes(root)
+        self.assertEqual(0, result.returncode, result.stdout)
+        self.assertNotIn("MATCHER_IN_INPUT", codes)
+
+    def test_invalid_enum_definition_is_one_definition_site_finding(self):
+        for values in (["open", "complete", "open"], ["café", "cafe\u0301"]):
+            with self.subTest(values=values):
+                root = self.make_root()
+                types_path = root / "framework/contexts/tasks/types.yaml"
+                types = yaml.safe_load(types_path.read_text(encoding="utf-8"))
+                types["types"]["TaskState"] = {
+                    "description": "Task lifecycle state.", "enum": values,
+                }
+                types["types"]["Task"]["fields"]["state"] = {
+                    "type": "TaskState", "required": True,
+                }
+                types_path.write_text(yaml.safe_dump(types, sort_keys=False), encoding="utf-8")
+                result, codes, payload = self.codes(root)
+                self.assertNotEqual(0, result.returncode)
+                self.assertEqual({"INVALID_TYPE_DEFINITION"}, codes)
+                self.assertEqual(1, len(payload["findings"]))
+                self.assertEqual("framework/contexts/tasks/types.yaml",
+                                 payload["findings"][0]["path"])
+
+    def test_poison_is_silent_transitively_and_unrelated_checks_continue(self):
+        root = self.make_root()
+        types_path = root / "framework/contexts/tasks/types.yaml"
+        types = yaml.safe_load(types_path.read_text(encoding="utf-8"))
+        types["types"]["Broken"] = {
+            "description": "Broken.", "enum": ["same", "same"],
+        }
+        types["types"]["Wrapper"] = {
+            "description": "Wraps a broken declaration.",
+            "fields": {"value": {"type": "Broken", "required": True}},
+        }
+        types_path.write_text(yaml.safe_dump(types, sort_keys=False), encoding="utf-8")
+        contract_path = root / "framework/blocks/tasks/contracts/add.yaml"
+        contract = yaml.safe_load(contract_path.read_text(encoding="utf-8"))
+        contract["output"]["wrapped"] = {
+            "type": "Wrapper", "required": True, "description": "Wrapped value.",
+        }
+        contract_path.write_text(yaml.safe_dump(contract, sort_keys=False), encoding="utf-8")
+        scenario_path = root / "framework/contexts/tasks/scenarios/tasks.yaml"
+        scenarios = yaml.safe_load(scenario_path.read_text(encoding="utf-8"))
+        scenarios[0]["then"]["output"]["wrapped"] = {"value": 17}
+        scenario_path.write_text(yaml.safe_dump(scenarios, sort_keys=False), encoding="utf-8")
+        rules_path = root / "framework/contexts/tasks/rules/tasks.yaml"
+        rules = yaml.safe_load(rules_path.read_text(encoding="utf-8"))
+        rules[0]["decision"] = "D-MISSING-001"
+        rules_path.write_text(yaml.safe_dump(rules, sort_keys=False), encoding="utf-8")
+
+        _, codes, payload = self.codes(root)
+        self.assertEqual({"INVALID_TYPE_DEFINITION", "UNKNOWN_DECISION"}, codes)
+        definition_findings = [item for item in payload["findings"]
+                               if item["code"] == "INVALID_TYPE_DEFINITION"]
+        self.assertEqual(1, len(definition_findings))
+        self.assertEqual("framework/contexts/tasks/types.yaml", definition_findings[0]["path"])
+        self.assertFalse({"UNSATISFIABLE_TYPE", "UNUSED_TYPE", "OPAQUE_TYPE"} & codes)
+
+    def test_broken_contract_local_type_reports_once_at_its_definition(self):
+        root = self.make_root()
+        contract_path = root / "framework/blocks/tasks/contracts/add.yaml"
+        contract = yaml.safe_load(contract_path.read_text(encoding="utf-8"))
+        contract["types"]["LocalState"] = {
+            "description": "Local state.", "enum": ["open", "open"],
+        }
+        contract["input"]["state"] = {
+            "type": "LocalState", "description": "Optional local state.",
+        }
+        contract_path.write_text(yaml.safe_dump(contract, sort_keys=False), encoding="utf-8")
+        _, codes, payload = self.codes(root)
+        self.assertEqual({"INVALID_TYPE_DEFINITION"}, codes)
+        self.assertEqual(1, len(payload["findings"]))
+        self.assertEqual("types.LocalState", payload["findings"][0]["fieldPath"])
+
+    def test_required_record_recursion_satisfiability_fixpoint(self):
+        cases = {
+            "direct": ({
+                "Node": {"description": "Node.", "fields": {
+                    "next": {"type": "Node", "required": True}}},
+            }, {"Node"}),
+            "mutual": ({
+                "A": {"description": "A.", "fields": {
+                    "b": {"type": "B", "required": True}}},
+                "B": {"description": "B.", "fields": {
+                    "a": {"type": "A", "required": True}}},
+            }, {"A", "B"}),
+            "list": ({
+                "Node": {"description": "Node.", "fields": {
+                    "children": {"type": "Node[]", "required": True}}},
+            }, set()),
+            "optional": ({
+                "Node": {"description": "Node.", "fields": {
+                    "next": {"type": "Node"}}},
+            }, set()),
+        }
+        for name, (definitions, expected) in cases.items():
+            with self.subTest(name=name):
+                _, errors = validator.preflight_registry(context_types={"types": definitions})
+                actual = {item["name"] for item in errors
+                          if item["code"] == "UNSATISFIABLE_TYPE"}
+                self.assertEqual(expected, actual)
+
+        root = self.make_root()
+        types_path = root / "framework/contexts/tasks/types.yaml"
+        types = yaml.safe_load(types_path.read_text(encoding="utf-8"))
+        types["types"]["UnusedNode"] = {
+            "description": "An impossible node.",
+            "fields": {"next": {"type": "UnusedNode", "required": True}},
+        }
+        types_path.write_text(yaml.safe_dump(types, sort_keys=False), encoding="utf-8")
+        _, codes, payload = self.codes(root)
+        self.assertEqual({"UNSATISFIABLE_TYPE"}, codes)
+        self.assertEqual(1, len(payload["findings"]))
+
+    def test_internal_error_guard_keeps_processing_artifacts(self):
+        root = self.make_root()
+        contract_path = root / "framework/blocks/tasks/contracts/list.yaml"
+        contract = yaml.safe_load(contract_path.read_text(encoding="utf-8"))
+        contract["output"]["items"]["type"] = "StillCheckedMissingType"
+        contract_path.write_text(yaml.safe_dump(contract, sort_keys=False), encoding="utf-8")
+        original = validator.validate_schema
+
+        def fail_one(document, schema_path, display_path, findings, each_item=False):
+            if str(display_path).endswith("contracts/add.yaml"):
+                raise RuntimeError("probe")
+            return original(document, schema_path, display_path, findings, each_item)
+
+        with mock.patch.object(validator, "validate_schema", side_effect=fail_one):
+            findings = validator.validate(root)
+        internal = [item for item in findings.items if item["code"] == "INTERNAL_ERROR"]
+        self.assertEqual(1, len(internal))
+        self.assertEqual("framework/blocks/tasks/contracts/add.yaml", internal[0]["path"])
+        self.assertTrue(any(item["code"] == "UNKNOWN_TYPE" and
+                            item["path"] == "framework/blocks/tasks/contracts/list.yaml"
+                            for item in findings.items))
+
+    def test_contract_registry_failure_does_not_hide_later_registry_error(self):
+        root = self.make_root()
+        add_path = root / "framework/blocks/tasks/contracts/add.yaml"
+        add_contract = yaml.safe_load(add_path.read_text(encoding="utf-8"))
+        add_contract["types"]["CrashRegistry"] = "Injected registry marker."
+        add_path.write_text(yaml.safe_dump(add_contract, sort_keys=False), encoding="utf-8")
+        list_path = root / "framework/blocks/tasks/contracts/list.yaml"
+        list_contract = yaml.safe_load(list_path.read_text(encoding="utf-8"))
+        list_contract["output"]["items"]["type"] = "MissingAfterCrash"
+        list_path.write_text(yaml.safe_dump(list_contract, sort_keys=False), encoding="utf-8")
+        original = validator.preflight_registry
+
+        def fail_one_registry(*args, **kwargs):
+            local_types = kwargs.get("local_types") or {}
+            if "CrashRegistry" in local_types:
+                raise RuntimeError("registry probe")
+            return original(*args, **kwargs)
+
+        with mock.patch.object(validator, "preflight_registry", side_effect=fail_one_registry):
+            findings = validator.validate(root)
+
+        internal = [item for item in findings.items if item["code"] == "INTERNAL_ERROR"]
+        self.assertEqual(1, len(internal))
+        self.assertEqual("framework/blocks/tasks/contracts/add.yaml", internal[0]["path"])
+        self.assertEqual("types", internal[0]["fieldPath"])
+        self.assertTrue(any(item["code"] == "UNKNOWN_TYPE" and
+                            item["path"] == "framework/blocks/tasks/contracts/list.yaml"
+                            for item in findings.items))
+
+    def test_context_registry_failure_does_not_hide_later_context_error(self):
+        root = Path("/project")
+        first_path = root / "framework/contexts/first/types.yaml"
+        second_path = root / "framework/contexts/second/types.yaml"
+        documents = {
+            first_path: {"types": {"CrashContext": "Injected registry marker."}},
+            second_path: {"types": {"Broken": {
+                "description": "Broken context type.",
+                "fields": {"value": {"type": "MissingAfterCrash"}},
+            }}},
+        }
+        findings = validator.Findings()
+        original = validator.preflight_registry
+
+        def fail_one_context(*args, **kwargs):
+            context_types = kwargs.get("context_types") or {}
+            declarations = context_types.get("types", context_types)
+            if "CrashContext" in declarations:
+                raise RuntimeError("context registry probe")
+            return original(*args, **kwargs)
+
+        with mock.patch.object(validator, "preflight_registry", side_effect=fail_one_context):
+            validator.build_contract_registries([], documents, root, findings)
+
+        internal = [item for item in findings.items if item["code"] == "INTERNAL_ERROR"]
+        self.assertEqual(1, len(internal))
+        self.assertEqual("framework/contexts/first/types.yaml", internal[0]["path"])
+        self.assertEqual("types", internal[0]["fieldPath"])
+        self.assertTrue(any(item["code"] == "UNKNOWN_TYPE" and
+                            item["path"] == "framework/contexts/second/types.yaml"
+                            for item in findings.items))
+
+    def test_reference_document_failure_does_not_hide_later_reference_error(self):
+        findings = validator.Findings()
+        documents = [
+            ({"crash": True}, Path("framework/contexts/tasks/rules/tasks.yaml")),
+            ({"rules": ["BR-MISSING-001"]}, Path("references-b.yaml")),
+        ]
+        original = validator.walk_mappings
+
+        def fail_one_document(document):
+            if isinstance(document, dict) and document.get("crash"):
+                raise RuntimeError("reference probe")
+            return original(document)
+
+        with mock.patch.object(validator, "walk_mappings", side_effect=fail_one_document):
+            validator.validate_references([], [], [], {}, documents, findings)
+
+        internal = [item for item in findings.items if item["code"] == "INTERNAL_ERROR"]
+        self.assertEqual(1, len(internal))
+        self.assertEqual("framework/contexts/tasks/rules/tasks.yaml", internal[0]["path"])
+        self.assertEqual("references", internal[0]["fieldPath"])
+        self.assertTrue(any(item["code"] == "UNKNOWN_BR" and
+                            item["path"] == "references-b.yaml" for item in findings.items))
+
+    def test_rule_reference_failure_does_not_hide_later_rule_error(self):
+        class ExplodingDecisions(dict):
+            def get(self, key, default=None):
+                if key == "D-CRASH-001":
+                    raise RuntimeError("rule reference probe")
+                return super().get(key, default)
+
+        findings = validator.Findings()
+        rules = [
+            ({"id": "BR-FAIL-001", "decision": "D-CRASH-001"}, Path("rules-a.yaml")),
+            ({"id": "BR-LATER-001", "decision": "D-MISSING-001"}, Path("rules-b.yaml")),
+        ]
+        validator.validate_references([], rules, [], ExplodingDecisions(), [], findings)
+
+        internal = [item for item in findings.items if item["code"] == "INTERNAL_ERROR"]
+        self.assertEqual(1, len(internal))
+        self.assertEqual("rules-a.yaml", internal[0]["path"])
+        self.assertEqual("rule.BR-FAIL-001", internal[0]["fieldPath"])
+        self.assertTrue(any(item["code"] == "UNKNOWN_DECISION" and
+                            item["path"] == "rules-b.yaml" for item in findings.items))
+
+    def test_scenario_reference_failure_does_not_hide_later_scenario_error(self):
+        findings = validator.Findings()
+        scenarios = [
+            ({"id": "SC-FAIL-001", "exercises": [], "when": {
+                "command": "missing.first", "input": {}}}, Path("scenario-a.yaml")),
+            ({"id": "SC-LATER-001", "exercises": [], "when": {
+                "command": "missing.second", "input": {}}}, Path("scenario-b.yaml")),
+        ]
+        original = validator.validate_capture_references
+
+        def fail_first(value, captures, path, location, findings):
+            if path == Path("scenario-a.yaml"):
+                raise RuntimeError("scenario probe")
+            return original(value, captures, path, location, findings)
+
+        with mock.patch.object(validator, "validate_capture_references", side_effect=fail_first):
+            validator.validate_references(scenarios, [], [], {}, [], findings)
+
+        internal = [item for item in findings.items if item["code"] == "INTERNAL_ERROR"]
+        self.assertEqual(1, len(internal))
+        self.assertEqual("scenario-a.yaml", internal[0]["path"])
+        self.assertEqual("scenario.SC-FAIL-001", internal[0]["fieldPath"])
+        self.assertTrue(any(item["code"] == "UNKNOWN_CONTRACT" and
+                            item["path"] == "scenario-b.yaml" for item in findings.items))
+
+    def test_schema_invalid_contract_section_does_not_escape_registry_analysis(self):
+        root = self.make_root()
+        add_path = root / "framework/blocks/tasks/contracts/add.yaml"
+        add_contract = yaml.safe_load(add_path.read_text(encoding="utf-8"))
+        add_contract["input"] = []
+        add_path.write_text(yaml.safe_dump(add_contract, sort_keys=False), encoding="utf-8")
+        list_path = root / "framework/blocks/tasks/contracts/list.yaml"
+        list_contract = yaml.safe_load(list_path.read_text(encoding="utf-8"))
+        list_contract["output"]["items"]["type"] = "MissingAfterMalformedContract"
+        list_path.write_text(yaml.safe_dump(list_contract, sort_keys=False), encoding="utf-8")
+
+        findings = validator.validate(root)
+
+        self.assertNotIn("INTERNAL_ERROR", {item["code"] for item in findings.items})
+        self.assertTrue(any(item["code"] == "SCHEMA_INVALID" and
+                            item["path"] == "framework/blocks/tasks/contracts/add.yaml"
+                            for item in findings.items))
+        self.assertTrue(any(item["code"] == "UNKNOWN_TYPE" and
+                            item["path"] == "framework/blocks/tasks/contracts/list.yaml"
+                            for item in findings.items))
+
+    def test_schema_invalid_exercises_do_not_escape_reference_coverage(self):
+        root = self.make_root()
+        scenario_path = root / "framework/contexts/tasks/scenarios/tasks.yaml"
+        scenarios = yaml.safe_load(scenario_path.read_text(encoding="utf-8"))
+        scenarios[0]["exercises"] = None
+        later = dict(scenarios[0])
+        later.update({
+            "id": "SC-TASKS-LATER-001",
+            "title": "Independent later scenario",
+            "exercises": [],
+            "when": {"command": "tasks.missing", "input": {}},
+            "then": {"output": {}},
+        })
+        scenarios.append(later)
+        scenario_path.write_text(yaml.safe_dump(scenarios, sort_keys=False), encoding="utf-8")
+
+        findings = validator.validate(root)
+
+        self.assertNotIn("INTERNAL_ERROR", {item["code"] for item in findings.items})
+        self.assertTrue(any(item["code"] == "SCHEMA_INVALID" and
+                            item["path"] == "framework/contexts/tasks/scenarios/tasks.yaml"
+                            for item in findings.items))
+        self.assertTrue(any(item["code"] == "UNKNOWN_CONTRACT" and
+                            "tasks.missing" in item["message"] for item in findings.items))
 
     def test_timezone_collation_review_and_decision_backed_allowances(self):
         root = self.make_root()

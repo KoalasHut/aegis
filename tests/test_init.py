@@ -41,7 +41,7 @@ class InitializationTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         metadata = json.loads((self.root / "project.json").read_text())
         self.assertEqual(metadata["name"], "sample-project")
-        self.assertEqual(metadata["aegis"]["version"], "0.2.3")
+        self.assertEqual(metadata["aegis"]["version"], "0.2.4")
         self.assertIn("NOT ADMITTED", (self.root / "docs/discussion/initial-assignment.draft.md").read_text())
         self.assertEqual((self.root / "framework/decisions.yaml").read_text(), "[]\n")
         self.assertEqual((self.root / "agents/decisions.yaml").read_text(), "[]\n")
@@ -74,6 +74,10 @@ class InitializationTests(unittest.TestCase):
         spec = importlib.util.spec_from_file_location("aegis_test_init_hashes", SOURCE / "scripts/init.py")
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
+        self.assertEqual({
+            "framework/decisions.yaml": "658ed7b34f44b2870803f6365e8a1843c40df1a0f8be8e8a3655c78a85127c76",
+            "agents/decisions.yaml": "73e67f6a4aa119079e8b41b0697f1996c89bc0911efdacc4fc20411d5025ec01",
+        }, module.MAINTENANCE_LOG_HASHES)
         for relative, expected in module.MAINTENANCE_LOG_HASHES.items():
             actual = hashlib.sha256((SOURCE / relative).read_bytes()).hexdigest()
             self.assertEqual(actual, expected, relative)

@@ -2,6 +2,9 @@ types:
   TaskState:
     description: Whether a task still needs attention.
     enum: [open, complete]
+  AccentState:
+    description: A state whose spelling demonstrates raw enum comparison.
+    enum: ["café"]
   Task:
     description: A task used by the matching examples.
     fields:
@@ -89,3 +92,10 @@ examples:
   - {id: M-46, clauses: [TS-004], kind: registry, importName: Task, finding: INVALID_TYPE_NAME}
   - {id: M-47, clauses: [TS-001], kind: shadow, typeName: Task, finding: TYPE_SHADOWED}
   - {id: M-48, clauses: [TS-004], kind: resolve, type: tasks.Task, finding: UNKNOWN_TYPE}
+  - {id: M-49, clauses: [TS-012], type: "map<string>", expected: {"café": "yes"}, actual: {"café": "yes"}, result: true}
+  - {id: M-50, clauses: [TS-012], type: "map<string>", expected: {"café": one, "café": two}, actual: {"café": one}, result: false}
+  - {id: M-51, clauses: [TS-012], type: "map<string>", expected: {"café": one}, actual: {"café": one, "café": two}, result: false}
+  - {id: M-52, clauses: [TS-013], type: AccentState, expected: "café", actual: "café", result: false}
+  - {id: M-53, clauses: [SS-003, TS-011], type: datetime, expected: "2026-10-02T09:00:00Z", actual: "2026-10-02 09:00:00+00:00", result: false}
+  - {id: M-54, clauses: [SS-016], kind: schema, position: input, value: {$any: true}, schemaValid: false}
+  - {id: M-55, clauses: [SS-017], kind: schema, position: input, value: "prefix ${saved.item.id}", schemaValid: false}

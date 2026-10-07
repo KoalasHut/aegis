@@ -1,6 +1,6 @@
 # Value encoding protocol
 
-Status: normative for the phase 3 runner/driver boundary. Version: 0.2.3.
+Status: normative for the phase 3 runner/driver boundary. Version: 0.2.4.
 
 The runner sends typed inputs in the canonical JSON form below. A driver accepts
 that form losslessly. Driver outputs may use any valid form listed here; the
@@ -16,7 +16,7 @@ case-sensitive declared string.
 | `number` | finite JSON number | Exact shortest round-trip decimal value; non-finite values are invalid |
 | `decimal` | JSON string such as `"10.50"` | A finite base-10 string or JSON number; compare as an exact decimal |
 | `date` | `YYYY-MM-DD` JSON string | A real Gregorian calendar date |
-| `datetime` | RFC 3339 JSON string with an explicit offset | Same instant matches; runner expectation precision defines the half-open match window |
+| `datetime` | RFC 3339 JSON string with an explicit offset | Same instant matches; runner expectation precision defines the half-open match window; only `T` or `t` separates date and time |
 | `duration` | ISO 8601 JSON string | Normalize to `(years, months, fixed seconds)` |
 | `id` | JSON string | Compared raw, without Unicode normalization |
 
@@ -35,6 +35,9 @@ explicit datetime offsets as instants, and treat scenario clock and timezone
 as inputs. They MUST NOT use the host default timezone, locale, collation, or
 Unicode normalization policy for business behavior. A driver without the
 declared `timezone` capability reports a timezone scenario as `unsupported`.
+Python drivers must use `datetime.isoformat()` or an equivalent RFC 3339
+serializer. The space-separated form commonly produced by `str(datetime)` is
+not a valid Aegis `datetime` and the runner rejects it.
 
 Executable runner and driver conformance remains phase 3 work. The serializer
 corpus in `tests/fixtures/serializers` verifies representation facts only; it

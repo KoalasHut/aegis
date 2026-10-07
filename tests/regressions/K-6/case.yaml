@@ -1,0 +1,5 @@
+id: K-6
+kind: production
+operation: MUT-36
+expectedFindings:
+  - {severity: error, code: INVALID_CAPTURE_REFERENCE, path: framework/contexts/tasks/scenarios/tasks.yaml, fieldPath: when.input.title}

@@ -1,5 +1,6 @@
 from pathlib import Path
 import re
+import unicodedata
 import unittest
 
 from scripts import validate as validator
@@ -61,6 +62,22 @@ class MatchingSpecificationExamples(unittest.TestCase):
                     with self.assertRaises(TypeResolutionError) as found:
                         resolve_type(item["type"], self.registry)
                     self.assertEqual(found.exception.code, item["finding"])
+                elif kind == "schema":
+                    scenario = [{
+                        "id": "SC-TEST-001", "title": "Schema example",
+                        "exercises": ["BR-TEST-001"], "verification": "automated",
+                        "given": {"steps": []},
+                        "when": {"command": "test.run", "input": {"value": item["value"]}},
+                        "then": {"output": {}},
+                    }]
+                    findings = validator.Findings()
+                    validator.validate_schema(
+                        scenario,
+                        SOURCE / "framework/language/schemas/scenario.schema.json",
+                        EXAMPLES,
+                        findings,
+                    )
+                    self.assertIs(not findings.items, item["schemaValid"])
                 else:
                     self.assertEqual(kind, "runtime")
                     findings = validator.Findings()
@@ -95,6 +112,16 @@ class MatchingSpecificationExamples(unittest.TestCase):
                       "$absent", "$any", "map<", "[]"):
             with self.subTest(token=token):
                 self.assertIn(token, serialized)
+
+    def test_m52_uses_nfc_equivalent_enum_spellings_but_compares_raw(self):
+        example = next(item for item in self.document["examples"] if item["id"] == "M-52")
+        self.assertEqual(
+            unicodedata.normalize("NFC", example["expected"]),
+            unicodedata.normalize("NFC", example["actual"]),
+        )
+        self.assertNotEqual(example["expected"], example["actual"])
+        self.assertFalse(match(example["expected"], example["actual"],
+                               example["type"], self.registry))
 
 
 if __name__ == "__main__":

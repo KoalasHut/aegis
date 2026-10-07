@@ -1,0 +1,5 @@
+id: K-3
+kind: production
+operation: MUT-33
+expectedFindings:
+  - {severity: error, code: MATCHER_IN_INPUT, path: framework/contexts/tasks/scenarios/tasks.yaml, fieldPath: 'given.steps[0].input.title'}

@@ -1,0 +1,13 @@
+{
+  "stack": "Kotlin/JVM",
+  "runtime": "17.0.20.1+1-1-22.04-Ubuntu",
+  "library": "Jackson Databind 2.11.1",
+  "options": "ObjectMapper defaults; NON_NULL for omit-null comparison",
+  "observed": {
+    "instant": "2026-10-02T09:00:00Z",
+    "offsetDateTime": "2026-10-02T09:00Z",
+    "decimalSerialized": "10.50",
+    "serializedDefault": "{\"note\":null}",
+    "serializedOmitNull": "{}"
+  }
+}

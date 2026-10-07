@@ -20,24 +20,30 @@ from referencing import Registry, Resource
 
 try:
     from scripts.init import MAINTENANCE_LOG_HASHES
-    from scripts.aegis_match import SCALAR_TYPES, scalar_validation_error
+    from scripts.aegis_match import (
+        SCALAR_TYPES, normalized_map_key_collisions, scalar_validation_error,
+    )
 except ModuleNotFoundError:  # Running this file directly outside the repository cwd.
     from init import MAINTENANCE_LOG_HASHES
-    from aegis_match import SCALAR_TYPES, scalar_validation_error
+    from aegis_match import SCALAR_TYPES, normalized_map_key_collisions, scalar_validation_error
 
 try:
     from scripts.aegis_types import (
-        TypeResolutionError, build_registry, load_types_document, load_yaml_exact, parse_type_expression,
-        resolve_type, structurally_equal,
+        TypeResolutionError, build_registry, is_poisoned_type, load_types_document,
+        load_yaml_exact, parse_type_expression, poisoned_type, preflight_registry,
+        resolve_type, structurally_equal, validate_type_tree,
     )
 except ModuleNotFoundError:
     try:
-        from aegis_types import (TypeResolutionError, build_registry, load_types_document, load_yaml_exact,
-                                 parse_type_expression, resolve_type, structurally_equal)
+        from aegis_types import (TypeResolutionError, build_registry, is_poisoned_type,
+                                 load_types_document, load_yaml_exact, parse_type_expression,
+                                 poisoned_type, preflight_registry, resolve_type,
+                                 structurally_equal, validate_type_tree)
     except ModuleNotFoundError:  # Allows focused validator tests before type patch integration.
         TypeResolutionError = None
-        build_registry = load_types_document = load_yaml_exact = parse_type_expression = None
-        resolve_type = structurally_equal = None
+        build_registry = is_poisoned_type = load_types_document = load_yaml_exact = None
+        parse_type_expression = poisoned_type = preflight_registry = None
+        resolve_type = structurally_equal = validate_type_tree = None
 
 
 SCRIPT_ROOT = Path(__file__).resolve().parents[1]
@@ -72,6 +78,12 @@ FINDING_PRIORITIES = {
     "UNKNOWN_CAPTURE": 20,
     "MAINTENANCE_DECISION_CITED": 30,
     "CAPTURE_PATH_INVALID": 30,
+    "INVALID_TYPE_DEFINITION": 30,
+    "UNKNOWN_TYPE": 30,
+    "TYPE_SHADOWED": 30,
+    "UNSATISFIABLE_TYPE": 30,
+    "MATCHER_IN_INPUT": 30,
+    "INVALID_CAPTURE_REFERENCE": 30,
 }
 
 
@@ -128,6 +140,15 @@ class Findings:
     def warnings(self):
         return [item for item in self.items
                 if item["severity"] == "warning" and not item.get("allowed")]
+
+
+def add_internal_error(findings, path, operation, exc, field_path=None):
+    """Report one unexpected operation failure at its owning artifact."""
+    findings.add(
+        "error", "INTERNAL_ERROR", path,
+        "%s: %s: %s" % (operation, type(exc).__name__, str(exc)[:240]),
+        cause="internal:%s:%s" % (path, operation), field_path=field_path,
+    )
 
 
 def relative(path, root):
@@ -286,23 +307,71 @@ def validate_schema(document, schema_path, display_path, findings, each_item=Fal
             prefix = "" if index is None else "[%s]" % index
             suffix = "%s%s" % (prefix, ("." + location) if location else "")
             cause = None
-            if (isinstance(error.instance, dict) and error.instance.get("as") and
+            finding_field_path = None
+            absolute_parts = list(error.absolute_path)
+            if "types" in absolute_parts:
+                type_index = absolute_parts.index("types")
+                if len(absolute_parts) > type_index + 1:
+                    cause = "type-def:%s:%s" % (
+                        display_path, absolute_parts[type_index + 1])
+            if (cause is None and isinstance(error.instance, dict) and error.instance.get("as") and
                     error.instance.get("expectError")):
                 cause = "capture:%s:%s" % (display_path, error.instance["as"])
-            else:
+            elif cause is None:
                 pending = [error]
                 indexed_capture = None
-                while pending and indexed_capture is None:
+                capture_reference_location = None
+                matcher_location = None
+                nested_type_name = None
+                while (pending and indexed_capture is None and
+                       capture_reference_location is None and matcher_location is None and
+                       nested_type_name is None):
                     detail = pending.pop()
                     pending.extend(detail.context)
+                    detail_parts = list(detail.absolute_path)
+                    if "types" in detail_parts:
+                        type_index = detail_parts.index("types")
+                        if len(detail_parts) > type_index + 1:
+                            nested_type_name = detail_parts[type_index + 1]
+                            continue
+                    if (isinstance(detail.instance, dict) and
+                            any(isinstance(key, str) and key.startswith("$")
+                                for key in detail.instance)):
+                        parts = list(detail.absolute_path)
+                        if parts and isinstance(parts[0], int):
+                            parts = parts[1:]
+                        matcher_location = _location_from_parts(parts)
+                        continue
                     if isinstance(detail.instance, str):
                         parts = _capture_parts(detail.instance)
                         if parts and any(segment.isdigit() for segment in parts[1:]):
                             indexed_capture = detail.instance
-                if indexed_capture is not None:
+                        elif "${" in detail.instance:
+                            whole_token = (detail.instance.startswith("${") and
+                                           detail.instance.endswith("}"))
+                            reference = detail.instance[2:-1] if whole_token else None
+                            malformed = (not whole_token or
+                                         ("." in reference and
+                                          CAPTURE_PATH_PATTERN.fullmatch(reference) is None))
+                            if malformed:
+                                parts = list(detail.absolute_path)
+                                if parts and isinstance(parts[0], int):
+                                    parts = parts[1:]
+                                capture_reference_location = _location_from_parts(parts)
+                if nested_type_name is not None:
+                    cause = "type-def:%s:%s" % (display_path, nested_type_name)
+                elif indexed_capture is not None:
                     cause = "capture-path:%s:%s" % (display_path, indexed_capture)
+                elif capture_reference_location is not None:
+                    cause = "capture-reference:%s:%s" % (
+                        display_path, _canonical_location(capture_reference_location))
+                    finding_field_path = capture_reference_location
+                elif matcher_location is not None:
+                    cause = "matcher-input:%s:%s" % (
+                        display_path, _canonical_location(matcher_location))
             findings.add("error", "SCHEMA_INVALID", display_path,
-                         "%s: %s" % (suffix or "document", error.message), cause=cause)
+                         "%s: %s" % (suffix or "document", error.message), cause=cause,
+                         field_path=finding_field_path)
 
 
 def walk_mappings(value):
@@ -324,6 +393,18 @@ def walk_strings(value):
     elif isinstance(value, list):
         for child in value:
             yield from walk_strings(child)
+
+
+def walk_strings_with_locations(value, location):
+    """Yield every nested string with its mapping/list location."""
+    if isinstance(value, str):
+        yield value, location
+    elif isinstance(value, dict):
+        for key, child in value.items():
+            yield from walk_strings_with_locations(child, "%s.%s" % (location, key))
+    elif isinstance(value, list):
+        for index, child in enumerate(value):
+            yield from walk_strings_with_locations(child, "%s[%s]" % (location, index))
 
 
 def add_id(index, identifier, path):
@@ -373,6 +454,38 @@ def is_capture_token(value):
 def is_matcher_object(value):
     return (isinstance(value, dict) and
             any(isinstance(key, str) and key.startswith("$") for key in value))
+
+
+def _canonical_location(location):
+    return re.sub(r"\[(\d+)\]", r".\1", location).lstrip(".")
+
+
+def _location_from_parts(parts):
+    location = ""
+    for part in parts:
+        if isinstance(part, int):
+            location += "[%s]" % part
+        else:
+            location += ("." if location else "") + str(part)
+    return location
+
+
+def validate_concrete_input(value, path, location, findings):
+    """Reject matcher-like mappings recursively in concrete scenario positions."""
+    if isinstance(value, dict):
+        if any(isinstance(key, str) and key.startswith("$") for key in value):
+            findings.add(
+                "error", "MATCHER_IN_INPUT", path,
+                "%s contains a matcher; input positions require concrete values" % location,
+                cause="matcher-input:%s:%s" % (path, _canonical_location(location)),
+                field_path=location,
+            )
+            return
+        for key, child in value.items():
+            validate_concrete_input(child, path, "%s.%s" % (location, key), findings)
+    elif isinstance(value, list):
+        for index, child in enumerate(value):
+            validate_concrete_input(child, path, "%s[%s]" % (location, index), findings)
 
 
 def _type_kind(node):
@@ -471,6 +584,10 @@ def validate_capture_type(value, target_type, target_registry, captures, path, l
     if resolved is None:
         return
     source_type, source_registry = resolved
+    if (is_poisoned_type and
+            (is_poisoned_type(source_type, source_registry) or
+             is_poisoned_type(target_type, target_registry))):
+        return
     equal = structurally_equal(source_type, target_type, target_registry) if structurally_equal else (
         source_type == target_type and source_registry == target_registry)
     if not equal:
@@ -491,6 +608,8 @@ def validate_typed_value(value, type_tree, registry, path, location, findings, *
     if kind in {None, "opaque"}:
         return
     if is_matcher_object(value):
+        if input_literal:
+            return  # validate_concrete_input owns the single definition-site finding.
         list_matchers = {"$length", "$contains", "$unordered"}
         used = list_matchers.intersection(value)
         if used and kind != "list":
@@ -540,8 +659,9 @@ def validate_typed_value(value, type_tree, registry, path, location, findings, *
                          "%s must be a list" % location,
                          cause="typed:%s:%s:value" % (path, location), field_path=location)
             return
-        for member in value:
-            validate_typed_value(member, node.get("item"), registry, path, location + "[]",
+        for index, member in enumerate(value):
+            validate_typed_value(member, node.get("item"), registry, path,
+                                 "%s[%s]" % (location, index),
                                  findings, input_literal=input_literal, captures=captures)
         return
     if kind == "map":
@@ -550,6 +670,15 @@ def validate_typed_value(value, type_tree, registry, path, location, findings, *
                          "%s must be a string-keyed map" % location,
                          cause="typed:%s:%s:value" % (path, location), field_path=location)
             return
+        for collision in normalized_map_key_collisions(value):
+            findings.add(
+                "error", "DUPLICATE_MAP_KEY", path,
+                "%s contains map keys equal after NFC: %s" %
+                (location, ", ".join(repr(key) for key in collision["keys"])),
+                cause="typed:%s:%s:duplicate-map-key:%s" %
+                (path, location, collision["normalizedKey"]),
+                field_path=location,
+            )
         for key, member in value.items():
             validate_typed_value(member, node.get("value"), registry, path,
                                  "%s.%s" % (location, key), findings,
@@ -586,12 +715,18 @@ def validate_typed_value(value, type_tree, registry, path, location, findings, *
 def contract_record(contract, field_name, registry, path, findings):
     """Resolve a contract input/output section into a synthetic record type."""
     fields = contract.get(field_name, {}) if isinstance(contract, dict) else {}
+    if not isinstance(fields, dict):
+        fields = {}  # Structural schema validation owns malformed contract sections.
     resolved = {}
     for name, definition in fields.items():
         if not isinstance(definition, dict):
             continue
+        expression = definition.get("type")
         try:
-            node = resolve_type(definition.get("type"), registry) if resolve_type else None
+            if expression in getattr(registry, "poisoned_expressions", ()):
+                node = poisoned_type(str(expression), "UNKNOWN_TYPE")
+            else:
+                node = resolve_type(expression, registry) if resolve_type else None
         except Exception as exc:
             # Registry construction reports the contract defect once at its declaration.
             # Scenario traversal stays opaque so one root cause does not fan out by use site.
@@ -642,33 +777,44 @@ def validate_fields(value, contract, field_name, path, location, findings, requi
 
 
 def validate_capture_references(value, captures, path, location, findings):
-    for text in walk_strings(value):
+    for text, text_location in walk_strings_with_locations(value, location):
         if "${" not in text:
             continue
         if not (text.startswith("${") and text.endswith("}")):
             findings.add("error", "INVALID_CAPTURE_REFERENCE", path,
-                         "%s contains an interpolated or malformed capture token" % location)
+                         "%s contains an interpolated or malformed capture token" % text_location,
+                         cause="capture-reference:%s:%s" %
+                         (path, _canonical_location(text_location)),
+                         field_path=text_location)
             continue
         reference = text[2:-1]
         if "." not in reference:
             findings.add("error", "BARE_CAPTURE_REFERENCE", path,
                          "%s references whole capture %s; use ${%s.field}" %
-                         (location, reference, reference))
+                         (text_location, reference, reference),
+                         cause="capture-reference:%s:%s" %
+                         (path, _canonical_location(text_location)),
+                         field_path=text_location)
             continue
         match = CAPTURE_PATH_PATTERN.fullmatch(reference)
         if match is None:
             findings.add("error", "INVALID_CAPTURE_REFERENCE", path,
                          "%s contains invalid capture reference ${%s}" %
-                         (location, reference))
+                         (text_location, reference),
+                         cause="capture-reference:%s:%s" %
+                         (path, _canonical_location(text_location)),
+                         field_path=text_location)
             continue
         capture, output = match.group(1), match.group(2)
         if capture not in captures:
             findings.add("error", "UNKNOWN_CAPTURE", path,
-                         "%s references capture %s before it is available" % (location, capture),
-                         cause="capture:%s:%s" % (path, capture))
+                         "%s references capture %s before it is available" %
+                         (text_location, capture),
+                         cause="capture:%s:%s" % (path, capture), field_path=text_location)
         elif isinstance(captures[capture], set) and output not in captures[capture]:
             findings.add("error", "UNKNOWN_CAPTURE_OUTPUT", path,
-                         "%s references undeclared output %s.%s" % (location, capture, output))
+                         "%s references undeclared output %s.%s" %
+                         (text_location, capture, output), field_path=text_location)
 
 
 def validate_supersession(records, kind, path_for, findings):
@@ -749,11 +895,22 @@ def add_contract_type_warnings(contract, path, findings):
                              "Aegis scalar" % (section, name, type_name))
 
 
+def _add_preflight_errors(errors, path, findings):
+    for error in errors:
+        name = error.get("name") or "types"
+        findings.add(
+            "error", error.get("code", "INVALID_TYPE_DEFINITION"), path,
+            error.get("message", "invalid type definition"),
+            cause="type-def:%s:%s" % (path, name),
+            field_path="types.%s" % name,
+        )
+
+
 def build_contract_registries(contracts, documents, root, findings, sibling_context_types=False):
-    """Build per-contract registries through the public aegis_types integration seam."""
-    if build_registry is None:
+    """Preflight scope definitions, then build silent poisoned contract registries."""
+    if preflight_registry is None:
         return {}
-    contexts = {}
+    context_documents = {}
     context_paths = {}
     for source_path, document in documents.items():
         if source_path.name != "types.yaml" or "contexts" not in source_path.parts:
@@ -761,55 +918,96 @@ def build_contract_registries(contracts, documents, root, findings, sibling_cont
         index = source_path.parts.index("contexts")
         if len(source_path.parts) > index + 1:
             name = source_path.parts[index + 1]
-            contexts[name] = document
+            context_documents[name] = document
             context_paths[name] = relative(source_path, root)
     if sibling_context_types:
         sibling_path = root / "types.yaml"
         if sibling_path in documents:
-            contexts[None] = documents[sibling_path]
+            context_documents[None] = documents[sibling_path]
             context_paths[None] = relative(sibling_path, root)
+
+    contexts = {}
+    failed_contexts = set()
+    for context_name, document in context_documents.items():
+        try:
+            registry, errors = preflight_registry(context_types=document)
+            contexts[context_name] = registry
+            _add_preflight_errors(errors, context_paths[context_name], findings)
+        except Exception as exc:
+            failed_contexts.add(context_name)
+            add_internal_error(findings, context_paths[context_name], "context type registry",
+                               exc, "types")
+
     registries = {}
     for contract, display_path in contracts:
         identifier = contract.get("id", "")
         context_name = identifier.split(".", 1)[0]
+        selected_context = context_name if context_name in context_documents else None
+        if selected_context in failed_contexts:
+            continue
         try:
-            registry = build_registry(
+            registry, errors = preflight_registry(
                 context_types=contexts.get(context_name, contexts.get(None)),
                 local_types=contract.get("types", {}),
             )
+            _add_preflight_errors(errors, display_path, findings)
+            registries[identifier] = registry
         except Exception as exc:
-            code = getattr(exc, "code", "UNKNOWN_TYPE")
-            findings.add("error", code, display_path, str(exc),
-                         cause="type-registry:%s:%s" % (display_path, context_name))
+            add_internal_error(findings, display_path, "contract type registry", exc, "types")
             continue
-        registries[identifier] = registry
         for section in ("input", "output", "fields"):
-            for field_name, definition in contract.get(section, {}).items():
+            fields = contract.get(section, {})
+            if not isinstance(fields, dict):
+                continue  # Structural schema validation owns malformed section shapes.
+            for field_name, definition in fields.items():
                 if not isinstance(definition, dict):
                     continue
+                expression = definition.get("type")
                 try:
-                    node = resolve_type(definition.get("type"), registry)
-                except Exception as exc:
+                    node = validate_type_tree(expression, registry)
+                    if is_poisoned_type(node, registry):
+                        registry.poisoned_expressions.add(expression)
+                        continue
+                except TypeResolutionError as exc:
                     code = getattr(exc, "code", "UNKNOWN_TYPE")
                     findings.add("error", code, display_path,
                                  "%s.%s: %s" % (section, field_name, exc),
-                                 cause="type:%s:%s.%s" % (display_path, section, field_name))
+                                 cause="type-field:%s:%s.%s" %
+                                 (display_path, section, field_name),
+                                 field_path="%s.%s" % (section, field_name))
+                    registry.poisoned_expressions.add(expression)
+                    continue
+                except Exception as exc:
+                    add_internal_error(findings, display_path, "contract field type resolution",
+                                       exc, "%s.%s" % (section, field_name))
                     continue
                 try:
                     opaque_names = _opaque_type_names(node, registry)
-                except Exception as exc:
+                except TypeResolutionError as exc:
                     code = getattr(exc, "code", "UNKNOWN_TYPE")
                     findings.add("error", code, display_path,
                                  "%s.%s: %s" % (section, field_name, exc),
-                                 cause="type:%s:%s.%s" % (display_path, section, field_name))
+                                 cause="type-field:%s:%s.%s" %
+                                 (display_path, section, field_name),
+                                 field_path="%s.%s" % (section, field_name))
+                    registry.poisoned_expressions.add(expression)
+                    continue
+                except Exception as exc:
+                    add_internal_error(findings, display_path, "contract field type traversal",
+                                       exc, "%s.%s" % (section, field_name))
                     continue
                 for opaque_name in sorted(opaque_names):
                     findings.add("warning", "OPAQUE_TYPE", display_path,
                                  "%s.%s uses opaque type %s" %
                                  (section, field_name, opaque_name),
                                  cause="type:%s:%s" % (display_path, opaque_name))
-    for context_name, document in contexts.items():
+    for context_name, document in context_documents.items():
+        if context_name in failed_contexts:
+            continue
         definitions = document.get("types", {}) if isinstance(document, dict) else {}
+        if not isinstance(definitions, dict):
+            definitions = {}  # Structural schema validation owns malformed type envelopes.
+        poisoned_names = contexts[context_name].poisoned_names
         used = set()
 
         def add_expression(expression):
@@ -829,7 +1027,10 @@ def build_contract_registries(contracts, documents, root, findings, sibling_cont
                         used.add(name)
                         definition = definitions[name]
                         if isinstance(definition, dict):
-                            for field in definition.get("fields", {}).values():
+                            fields = definition.get("fields", {})
+                            if not isinstance(fields, dict):
+                                continue
+                            for field in fields.values():
                                 if isinstance(field, dict):
                                     add_expression(field.get("type"))
                     continue
@@ -843,10 +1044,13 @@ def build_contract_registries(contracts, documents, root, findings, sibling_cont
                     contract.get("id", "").split(".", 1)[0] != context_name):
                 continue
             for section in ("input", "output", "fields"):
-                for definition in contract.get(section, {}).values():
+                fields = contract.get(section, {})
+                if not isinstance(fields, dict):
+                    continue
+                for definition in fields.values():
                     if isinstance(definition, dict):
                         add_expression(definition.get("type"))
-        for name in sorted(set(definitions) - used):
+        for name in sorted(set(definitions) - used - poisoned_names):
             findings.add("warning", "UNUSED_TYPE", context_paths[context_name],
                          "context type %s is not used by a contract" % name,
                          cause="unused-type:%s:%s" % (context_paths[context_name], name))
@@ -864,7 +1068,7 @@ def validate_references(scenarios, rules, contracts, decisions, reference_docume
         return contract_registries.get(contract.get("id")) if isinstance(contract, dict) else None
     scenario_ids = {item.get("id") for item, _ in scenarios}
 
-    for rule, path in rules:
+    def validate_rule_reference(rule, path):
         decision = rule.get("decision")
         if project_scope and isinstance(decision, str) and decision.startswith("D-AEGIS-"):
             cause = "decision-citation:%s:%s" % (path, decision)
@@ -883,7 +1087,15 @@ def validate_references(scenarios, rules, contracts, decisions, reference_docume
                          "rule %s references decision %s with status %s" %
                          (rule.get("id"), decision, decision_record.get("status")))
 
-    for document, path in reference_documents:
+    for rule, path in rules:
+        try:
+            validate_rule_reference(rule, path)
+        except Exception as exc:
+            identifier = rule.get("id") if isinstance(rule, dict) else None
+            field_path = "rule.%s" % identifier if identifier else "rule"
+            add_internal_error(findings, path, "rule references", exc, field_path)
+
+    def validate_reference_document(document, path):
         if path.name in {"rules.yaml", "rules.yml"} and "registry" in path.parts:
             entries = document if isinstance(document, list) else []
             registry_ids = Counter(entry.get("id") for entry in entries
@@ -928,6 +1140,12 @@ def validate_references(scenarios, rules, contracts, decisions, reference_docume
                     findings.add("error", "UNKNOWN_CONTRACT", path,
                                  "registry references unknown contract %s" % identifier)
 
+    for document, path in reference_documents:
+        try:
+            validate_reference_document(document, path)
+        except Exception as exc:
+            add_internal_error(findings, path, "reference document", exc, "references")
+
     def require_contract(name, expected_kind, path, location):
         contract = contract_by_id.get(name)
         if contract is None:
@@ -940,8 +1158,11 @@ def validate_references(scenarios, rules, contracts, decisions, reference_docume
                          (location, name, contract.get("kind"), expected_kind))
         return contract
 
-    for scenario, path in scenarios:
-        for rule_id in scenario.get("exercises", []):
+    def validate_scenario_reference(scenario, path):
+        exercises = scenario.get("exercises", [])
+        if not isinstance(exercises, list):
+            exercises = []  # Structural schema validation owns malformed exercise shapes.
+        for rule_id in exercises:
             rule = rule_by_id.get(rule_id)
             if rule is None:
                 findings.add("error", "UNKNOWN_BR", path,
@@ -963,6 +1184,8 @@ def validate_references(scenarios, rules, contracts, decisions, reference_docume
                 continue
             operation = require_contract(command.get("command"), "command", path,
                                          "given.steps[%s]" % index)
+            validate_concrete_input(command.get("input", {}), path,
+                                    "given.steps[%s].input" % index, findings)
             validate_capture_references(command.get("input", {}), captures, path,
                                         "given.steps[%s].input" % index, findings)
             validate_fields(command.get("input", {}), operation, "input", path,
@@ -999,6 +1222,8 @@ def validate_references(scenarios, rules, contracts, decisions, reference_docume
                                          if registry is not None else set(operation.get("output", {})))
         if isinstance(given.get("seed"), dict):
             seed = require_contract(given["seed"].get("contract"), "port", path, "given.seed")
+            validate_concrete_input(given["seed"].get("input", {}), path,
+                                    "given.seed.input", findings)
             validate_capture_references(given["seed"].get("input", {}), captures, path,
                                         "given.seed.input", findings)
             validate_fields(given["seed"].get("input", {}), seed, "input", path,
@@ -1007,18 +1232,19 @@ def validate_references(scenarios, rules, contracts, decisions, reference_docume
 
         when = scenario.get("when", {})
         if not isinstance(when, dict):
-            continue
+            return
         if "command" in when:
             operation = require_contract(when.get("command"), "command", path, "when")
         else:
             operation = require_contract(when.get("query"), "query", path, "when")
+        validate_concrete_input(when.get("input", {}), path, "when.input", findings)
         validate_capture_references(when.get("input", {}), captures, path, "when.input", findings)
         validate_fields(when.get("input", {}), operation, "input", path, "when.input",
                         findings, registry=registry_for(operation), captures=captures)
 
         then = scenario.get("then", {})
         if not isinstance(then, dict):
-            continue
+            return
         if then.get("error") and operation is not None:
             codes = {item.get("code") for item in operation.get("errors", []) if isinstance(item, dict)}
             if then["error"] not in codes:
@@ -1048,6 +1274,8 @@ def validate_references(scenarios, rules, contracts, decisions, reference_docume
             if isinstance(observation, dict):
                 query = require_contract(observation.get("query"), "query", path,
                                          "then.observe[%s]" % index)
+                validate_concrete_input(observation.get("input", {}), path,
+                                        "then.observe[%s].input" % index, findings)
                 validate_capture_references(observation.get("input", {}), captures, path,
                                             "then.observe[%s].input" % index, findings)
                 validate_capture_references(observation.get("expect", {}), captures, path,
@@ -1059,9 +1287,20 @@ def validate_references(scenarios, rules, contracts, decisions, reference_docume
                                 "then.observe[%s].expect" % index, findings, required=False,
                                 registry=registry_for(query), captures=captures)
 
+    for scenario, path in scenarios:
+        try:
+            validate_scenario_reference(scenario, path)
+        except Exception as exc:
+            identifier = scenario.get("id") if isinstance(scenario, dict) else None
+            field_path = "scenario.%s" % identifier if identifier else "scenario"
+            add_internal_error(findings, path, "scenario references", exc, field_path)
+
     exercised = {}
     for scenario, _ in scenarios:
-        for rule_id in scenario.get("exercises", []):
+        exercises = scenario.get("exercises", [])
+        if not isinstance(exercises, list):
+            continue  # Already reported by structural schema validation.
+        for rule_id in exercises:
             exercised.setdefault(rule_id, set()).add(scenario.get("verification"))
     for rule, path in rules:
         if (rule.get("status") == "approved" and rule.get("verification") == "automated" and
@@ -1075,6 +1314,7 @@ ZONE_BASIS_TERMS = re.compile(
     r"\b(UTC|time ?zone|timezone|user(?:'s)? zone|store(?:'s)? zone|[A-Za-z_]+/[A-Za-z_]+)\b",
     re.IGNORECASE,
 )
+LOCALE_TAG_PATTERN = re.compile(r"^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$")
 
 
 def validate_environment_rules(scenarios, rules, findings):
@@ -1096,7 +1336,8 @@ def validate_environment_rules(scenarios, rules, findings):
                          "rule %s uses local-time language without naming its zone basis" %
                          rule.get("id"), cause="cpr-007:%s:%s" % (path, rule.get("id")))
         collation = rule.get("collation")
-        if (isinstance(collation, dict) and collation.get("locale") and
+        if (isinstance(collation, dict) and
+                LOCALE_TAG_PATTERN.fullmatch(str(collation.get("locale", ""))) and
                 rule.get("verification") == "automated"):
             findings.add("warning", "LOCALE_COLLATION_REQUIRES_MANUAL", path,
                          "rule %s uses locale collation and requires manual verification" %
@@ -1156,7 +1397,13 @@ def validate_scope(root, neutrality_words_path=None, scope_name="project", proje
     neutrality_words = load_neutrality_words(root, neutrality_words_path, findings)
     documents = {}
     for path in artifact_paths(root, project_scope):
-        document = load_document(path, findings, root)
+        try:
+            document = load_document(path, findings, root)
+        except Exception as exc:  # Safety net around custom loaders and future formats.
+            findings.add("error", "INTERNAL_ERROR", relative(path, root),
+                         "%s: %s" % (type(exc).__name__, str(exc)[:240]),
+                         cause="internal:%s" % relative(path, root))
+            continue
         if document is not None:
             documents[path] = document
 
@@ -1182,7 +1429,7 @@ def validate_scope(root, neutrality_words_path=None, scope_name="project", proje
     decision_records = []
     allowance_documents = []
 
-    for path, document in documents.items():
+    def process_document(path, document):
         display_path = relative(path, root)
         if "constitution" in path.parts and "rules" in path.parts:
             validate_schema(document, rule_schema, display_path, findings, each_item=True)
@@ -1238,6 +1485,16 @@ def validate_scope(root, neutrality_words_path=None, scope_name="project", proje
                     if isinstance(identifier, str) and not identifier.startswith("${"):
                         add_id(ids, identifier, display_path)
 
+    for path, document in documents.items():
+        try:
+            process_document(path, document)
+        except Exception as exc:  # Safety net: malformed artifacts must not abort the scope.
+            findings.add(
+                "error", "INTERNAL_ERROR", relative(path, root),
+                "%s: %s" % (type(exc).__name__, str(exc)[:240]),
+                cause="internal:%s" % relative(path, root),
+            )
+
     for identifier, paths in sorted(ids.items()):
         if len(paths) > 1:
             findings.add("error", "DUPLICATE_ID", paths[0],
@@ -1262,12 +1519,28 @@ def validate_scope(root, neutrality_words_path=None, scope_name="project", proje
                           lambda rule: rule_paths[id(rule)], findings)
     validate_supersession([decision for decision, _ in decision_records], "DECISION",
                           lambda decision: decision_paths[id(decision)], findings)
-    contract_registries = build_contract_registries(
-        contracts, documents, root, findings, sibling_context_types=not project_scope)
-    validate_references(scenarios, rules, contracts, decisions, reference_documents, findings,
-                        project_scope, contract_registries)
-    validate_environment_rules(scenarios, rules, findings)
-    apply_validation_allowances(allowance_documents, decisions, findings, repo_prefix)
+    try:
+        contract_registries = build_contract_registries(
+            contracts, documents, root, findings, sibling_context_types=not project_scope)
+    except Exception as exc:
+        findings.add("error", "INTERNAL_ERROR", Path("types.yaml"),
+                     "%s: %s" % (type(exc).__name__, str(exc)[:240]),
+                     cause="internal:registry")
+        contract_registries = {}
+    for phase_name, phase in (
+        ("references", lambda: validate_references(
+            scenarios, rules, contracts, decisions, reference_documents, findings,
+            project_scope, contract_registries)),
+        ("environment", lambda: validate_environment_rules(scenarios, rules, findings)),
+        ("allowances", lambda: apply_validation_allowances(
+            allowance_documents, decisions, findings, repo_prefix)),
+    ):
+        try:
+            phase()
+        except Exception as exc:
+            findings.add("error", "INTERNAL_ERROR", Path("."),
+                         "%s: %s" % (type(exc).__name__, str(exc)[:240]),
+                         cause="internal:%s" % phase_name)
 
     if project_scope and not (root / "project.json").is_file() and not is_aegis_template(root):
         findings.add("warning", "PROJECT_NOT_INITIALIZED", Path("project.json"),
@@ -1463,8 +1736,16 @@ def validate(root, neutrality_words_path=None, base=None, verbose_findings=False
     for scope_root, scope_name, project_scope in scopes:
         prefix = relative(scope_root, root)
         prefix = Path() if prefix == Path(".") else prefix
-        result = validate_scope(scope_root, neutrality_words_path, scope_name, project_scope,
-                                verbose_findings, prefix)
+        try:
+            result = validate_scope(scope_root, neutrality_words_path, scope_name, project_scope,
+                                    verbose_findings, prefix)
+        except Exception as exc:
+            result = Findings(verbose=verbose_findings)
+            result.add("error", "INTERNAL_ERROR", relative(scope_root, root),
+                       "%s: %s" % (type(exc).__name__, str(exc)[:240]),
+                       cause="internal:scope:%s" % scope_name)
+            for item in result.items:
+                item["scope"] = scope_name
         combined.extend(result)
     if base:
         base_findings = Findings()

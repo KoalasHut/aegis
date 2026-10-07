@@ -1,0 +1,5 @@
+id: K-5
+kind: production
+operation: MUT-35
+expectedFindings:
+  - {severity: error, code: INVALID_TYPE_DEFINITION, path: framework/contexts/tasks/types.yaml, fieldPath: types.TaskState}

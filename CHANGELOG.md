@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.2.4
+
+Harden artifact validation before the runner phase and extend the serializer
+evidence corpus. Agent protocol version remains 0.1.0.
+
+- K-1 and K-2 resolve malformed context and contract type expressions into one
+  `UNKNOWN_TYPE` finding at the declaration rather than a traceback.
+- K-3 and K-4 reject matcher keys in concrete input positions with one
+  `MATCHER_IN_INPUT` finding; matchers remain restricted to expectation
+  positions.
+- K-5 and K-6 report a broken enum definition or interpolated capture once at
+  its root location, without dependent schema or consumer noise.
+- K-7 and K-8 compare typed map keys after NFC normalization and reject
+  NFC-colliding map keys and enum declarations. Enum membership at runtime stays
+  raw and case-sensitive.
+- K-9 rejects required-record recursive cycles as `UNSATISFIABLE_TYPE`; optional,
+  list and map edges remain finite constructions.
+- K-10 documents that the date/time separator is `T` or `t`; the space form
+  emitted by Python `str(datetime)` is rejected.
+- Record approved OD-35 through OD-40. OD-36 supersedes OD-32's declaration
+  uniqueness rule while preserving its raw runtime enum comparison.
+- Add deterministic 200-example robustness and exact visible-finding mutation
+  evidence. It records no crash or `INTERNAL_ERROR` for that pinned profile and
+  the checked-in regression corpus; it is not a universal no-crash claim.
+- Update the serializer manifest to protocol 0.2.4. Python, JavaScript, .NET and
+  a Kotlin/JVM 2.1.20 + Jackson Databind 2.11.1 probe are locally executed;
+  Swift remains pending because Swift/Foundation is unavailable.
+
+There is still no scenario runner, driver implementation, complete-output
+validator, result report or support matrix. The corpus records representation
+facts and is not cross-stack behavioral conformance.
+
 ## 0.2.3
 
 Complete the artifact-side type model and define cross-stack value semantics

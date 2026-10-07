@@ -1,0 +1,6 @@
+id: K-7
+kind: match
+type: map<string>
+expected: {café: one}
+actual: {café: one}
+result: true

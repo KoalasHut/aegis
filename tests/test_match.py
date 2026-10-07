@@ -9,7 +9,10 @@ import jsonschema
 from referencing import Registry, Resource
 from hypothesis import given, strategies as st
 
-from scripts.aegis_match import MatchError, match, scalar_validation_error
+from scripts.aegis_match import (
+    MatchError, match, normalized_map_key_collisions, scalar_validation_error,
+    typed_map_key_collisions,
+)
 from scripts.aegis_types import (
     TypeResolutionError, build_registry, load_types_document, load_yaml_exact,
     parse_type_expression, structurally_equal,
@@ -97,6 +100,7 @@ class MatcherTests(unittest.TestCase):
     def test_f5_datetimes_compare_as_instants_and_accept_serialization_variants(self):
         expected = "2026-10-02T09:00:00Z"
         for actual in ("2026-10-02T11:00:00+02:00",
+                       "2026-10-02t09:00:00Z",
                        "2026-10-02T09:00:00.000Z",
                        "2026-10-02T09:00Z"):
             with self.subTest(actual=actual):
@@ -185,6 +189,45 @@ class MatcherTests(unittest.TestCase):
         self.assertTrue(match(expected, actual, "Envelope", registry))
         actual["tasks"][0]["state"] = "Open"
         self.assertFalse(match(expected, actual, "Envelope", registry))
+
+    def test_map_keys_compare_after_nfc_but_record_fields_remain_raw(self):
+        self.assertTrue(match({"café": "yes"}, {"café": "yes"},
+                              "map<string>"))
+        record = {"kind": "record", "fields": {"café": {"kind": "scalar", "name": "string"}}}
+        self.assertFalse(match({"café": "yes"}, {"café": "yes"}, record))
+
+    def test_nfc_colliding_map_keys_are_detected_and_do_not_match(self):
+        collision = {"café": "one", "café": "two"}
+        self.assertEqual(normalized_map_key_collisions(collision, ("labels",)), ({
+            "path": ("labels",), "normalizedKey": "café", "keys": ("café", "café"),
+        },))
+        self.assertEqual(normalized_map_key_collisions([]), ())
+        self.assertFalse(match({"café": "one"}, collision, "map<string>"))
+        self.assertFalse(match(collision, {"café": "one"}, "map<string>"))
+        self.assertTrue(match({"café": "one"}, {"café": "one"}, "map<string>"))
+        self.assertFalse(match({"missing": "one"}, {"café": "one"}, "map<string>"))
+
+    def test_nested_maps_and_list_maps_normalize_and_report_collision_paths(self):
+        registry = build_registry(context_types={
+            "Payload": {"description": "Nested maps.", "fields": {
+                "labels": {"type": "map<string>", "required": True},
+                "groups": {"type": "map<string>[]", "required": True},
+            }},
+        })
+        expected = {"labels": {"café": "one"}, "groups": [{"résumé": "two"}]}
+        actual = {"labels": {"café": "one"}, "groups": [{"résumé": "two"}]}
+        self.assertTrue(match(expected, actual, "Payload", registry))
+
+        actual["groups"][0]["résumé"] = "duplicate"
+        self.assertEqual(typed_map_key_collisions(actual, "Payload", registry), ({
+            "path": ("groups", 0), "normalizedKey": "résumé",
+            "keys": ("résumé", "résumé"),
+        },))
+        self.assertFalse(match({"labels": {}}, actual, "Payload", registry))
+
+    def test_non_string_map_keys_are_clean_non_matches_at_any_depth(self):
+        self.assertFalse(match({"valid": "one"}, {1: "one"}, "map<string>"))
+        self.assertFalse(match([{1: "one"}], [{1: "one"}], "map<string>[]"))
 
     def test_no_value_decimal_number_nfc_and_id_semantics(self):
         self.assertTrue(match({"note": None}, {}))
@@ -400,6 +443,24 @@ class LanguageSchemaTests(unittest.TestCase):
                 else:
                     scenario[0]["then"]["output"] = {"id": "${task1.task.id}"}
                 self.assertEqual(list(validator.iter_errors(scenario)), [])
+
+    def test_input_positions_are_concrete_at_every_depth(self):
+        validator = schema_validator("scenario.schema.json")
+        locations = ("given", "when", "observe")
+        for location in locations:
+            scenario = self.scenario()
+            if location == "given":
+                scenario[0]["given"]["steps"] = [{"command": "tasks.add", "input": {"nested": [{"$any": True}]}}]
+            elif location == "when":
+                scenario[0]["when"]["input"] = {"$absent": True}
+            else:
+                scenario[0]["then"]["observe"] = [{"query": "tasks.list", "input": {"$any": True}, "expect": {}}]
+            with self.subTest(location=location):
+                self.assertTrue(list(validator.iter_errors(scenario)))
+
+        scenario = self.scenario()
+        scenario[0]["then"]["output"] = {"items": {"$contains": []}}
+        self.assertEqual(list(validator.iter_errors(scenario)), [])
 
     def test_scalar_vocabulary_is_central_and_unknown_names_remain_schema_valid(self):
         common = json.loads((SCHEMAS / "common.schema.json").read_text(encoding="utf-8"))

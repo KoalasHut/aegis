@@ -42,6 +42,18 @@ remain distinct even though both use string values.
 run time, scenario setup ends with `error`; the runner must not reinterpret
 the missing value as null or a match failure.
 
+**SS-016.** Matcher objects are allowed only in expectation positions:
+`then.output`, `then.observe[].expect`, and `then.events[].input`. Values in
+`given.steps[].input`, legacy `given.commands[].input`, `given.seed.input`,
+`when.input`, and `then.observe[].input` are concrete. A mapping key beginning
+with `$` anywhere beneath a concrete value is `MATCHER_IN_INPUT`.
+
+**SS-017.** JSON Schema identifies concrete and expectation positions and may
+also reject malformed, incomplete, or interpolated capture syntax. Capture
+spelling and path validity are semantic causes: the validator associates an
+overlapping `SCHEMA_INVALID` detail with the same cause and suppresses it from
+ordinary findings, leaving the single specific capture finding visible.
+
 A failed setup step makes the scenario an `error` (invalid setup), never a
 pass or fail. Add `expectError: <code>` only when that setup failure is
 intentional; the code must be declared by the command's error contract. A step
@@ -69,7 +81,8 @@ type follows every record field, list item, and map value at any depth.
   without seconds, such as `2026-10-02T09:00Z`. This extension preserves the
   F-5 cross-stack serialization case. Thus `2026-10-02T09:00:00Z` matches both
   `2026-10-02T11:00:00+02:00` and `2026-10-02T09:00:00.000Z`; it also matches
-  an implementation serialization of `2026-10-02T09:00Z`.
+  an implementation serialization of `2026-10-02T09:00Z`. Only `T` or `t`
+  separates date and time; a space separator is invalid.
 - **SS-004.** `date` values compare as calendar dates in `YYYY-MM-DD` form.
 - **SS-005.** `duration` values use the nonnegative Aegis ISO 8601 subset. Components are
   ordered as years, calendar months, weeks, days, then `T` and hours, minutes,

@@ -100,5 +100,19 @@ Its canonical driver wire form remains a string.
 profile in the scenario specification. `duration` uses the nonnegative Aegis
 ISO 8601 subset and component normalization described there.
 
+**TS-012.** Map keys are string values and compare after NFC normalization.
+Expected and actual maps are each required to have at most one raw key for
+each NFC-normalized key. An expected collision is `DUPLICATE_MAP_KEY`; an
+actual collision is a contract violation and cannot match. Record field names
+are declared identifiers and continue to compare raw. Collision inspection
+walks the complete resolved typed value, including nested records, lists, and
+maps, and reports the path of each collision. A non-string map key is invalid
+and produces a clean non-match rather than being normalized.
+
+**TS-013.** Enum declarations are unique after NFC normalization. NFC-equal
+members are `INVALID_TYPE_DEFINITION`, reported at the definition. Valid enum
+values still compare raw and case-sensitively at match time; enum matching
+does not apply the `string` normalization rule.
+
 The numbered, executable examples M-01 onward live in
 `examples/matching.yaml`. They are part of this specification.

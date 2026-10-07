@@ -1,0 +1,5 @@
+id: K-4
+kind: production
+operation: MUT-34
+expectedFindings:
+  - {severity: error, code: MATCHER_IN_INPUT, path: framework/contexts/tasks/scenarios/tasks.yaml, fieldPath: when.input.dueAt}

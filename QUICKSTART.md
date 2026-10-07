@@ -9,7 +9,8 @@ You'll act as project owner and manually route work between agent sessions.
 The example prompts describe tasks; they are not preapproved assignments or
 an automatic pipeline. No TODO application is bundled with Aegis. Version 0.2.0
 validates rule/scenario artifacts; it does not include a conformance runner or
-driver, lane shortcuts, provisional-rule flow or legacy extraction.
+driver, lane shortcuts, provisional-rule flow or legacy extraction. In 0.2.4,
+keep matcher keys in expectation positions; inputs are concrete values.
 
 ## 1. Start your project
 

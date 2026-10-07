@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 MAINTENANCE_LOG_HASHES = {
-    "framework/decisions.yaml": "99567386076e3b762421017b6e31d991b803e29a45e705ff0715a40ebfe34bee",
+    "framework/decisions.yaml": "658ed7b34f44b2870803f6365e8a1843c40df1a0f8be8e8a3655c78a85127c76",
     "agents/decisions.yaml": "73e67f6a4aa119079e8b41b0697f1996c89bc0911efdacc4fc20411d5025ec01",
 }
 

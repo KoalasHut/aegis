@@ -66,7 +66,7 @@
           "additionalProperties": false,
           "properties": {
             "contract": { "type": "string", "minLength": 1 },
-            "input": { "$ref": "#/$defs/scenarioObject" }
+            "input": { "$ref": "#/$defs/concreteObject" }
           },
           "required": ["contract", "input"]
         }
@@ -87,7 +87,7 @@
       "additionalProperties": false,
       "properties": {
         "command": { "type": "string", "minLength": 1 },
-        "input": { "$ref": "#/$defs/scenarioObject" },
+        "input": { "$ref": "#/$defs/concreteObject" },
         "as": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9_]*$" },
         "expectError": { "type": "string", "minLength": 1 }
       },
@@ -115,7 +115,7 @@
       "additionalProperties": false,
       "properties": {
         "command": { "type": "string", "minLength": 1 },
-        "input": { "$ref": "#/$defs/scenarioObject" }
+        "input": { "$ref": "#/$defs/concreteObject" }
       },
       "required": ["command", "input"]
     },
@@ -124,7 +124,7 @@
       "additionalProperties": false,
       "properties": {
         "query": { "type": "string", "minLength": 1 },
-        "input": { "$ref": "#/$defs/scenarioObject" }
+        "input": { "$ref": "#/$defs/concreteObject" }
       },
       "required": ["query", "input"]
     },
@@ -147,7 +147,7 @@
             "additionalProperties": false,
             "properties": {
               "query": { "type": "string", "minLength": 1 },
-              "input": { "$ref": "#/$defs/scenarioObject" },
+              "input": { "$ref": "#/$defs/concreteObject" },
               "expect": { "$ref": "#/$defs/expectedObject" }
             },
             "required": ["query", "input", "expect"]
@@ -202,16 +202,17 @@
         { "$ref": "#/$defs/expectedMatcher" }
       ]
     },
-    "scenarioObject": {
+    "concreteObject": {
       "type": "object",
-      "additionalProperties": { "$ref": "#/$defs/scenarioValue" }
+      "propertyNames": { "not": { "pattern": "^\\$" } },
+      "additionalProperties": { "$ref": "#/$defs/concreteValue" }
     },
-    "scenarioValue": {
+    "concreteValue": {
       "oneOf": [
         { "$ref": "#/$defs/scenarioString" },
         { "type": ["number", "boolean", "null"] },
-        { "type": "array", "items": { "$ref": "#/$defs/scenarioValue" } },
-        { "$ref": "#/$defs/scenarioObject" }
+        { "type": "array", "items": { "$ref": "#/$defs/concreteValue" } },
+        { "$ref": "#/$defs/concreteObject" }
       ]
     },
     "scenarioString": {
@@ -224,7 +225,8 @@
           "type": "string",
           "not": { "pattern": "\\$\\{" }
         }
-      ]
+      ],
+      "description": "Capture-token schema errors share the semantic capture cause and are suppressed from ordinary findings."
     },
     "expectedMatcher": {
       "oneOf": [

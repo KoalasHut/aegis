@@ -1,4 +1,4 @@
-protocolVersion: 0.2.3
+protocolVersion: 0.2.4
 executed:
   - stack: Python
     status: verified-local
@@ -16,11 +16,13 @@ executed:
     source: dotnet/Program.cs
     project: dotnet/SerializerProbe.csproj
     command: dotnet run --project tests/fixtures/serializers/dotnet/SerializerProbe.csproj
-deferred:
   - stack: Kotlin/JVM
-    status: unavailable-unverified
-    reason: Kotlin compiler/runtime and a pinned JSON library are unavailable on this host.
-    requiredEvidence: Run a checked-in Kotlin probe with pinned compiler, runtime, library and options.
+    status: verified-local
+    fixture: kotlin.json
+    source: kotlin/Probe.kt
+    runner: kotlin/probe.sh
+    command: bash tests/fixtures/serializers/kotlin/probe.sh
+deferred:
   - stack: Swift
     status: unavailable-unverified
     reason: Swift and Foundation are unavailable on this host.

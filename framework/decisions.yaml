@@ -315,7 +315,7 @@
   title: "OD-32 — Closed raw enums"
   question: "How are enumerated values declared and compared?"
   decision: "An enum is a closed set of unique, non-empty strings. Validation and comparison use raw, case-sensitive membership without Unicode normalization; literals outside the set are INVALID_ENUM_VALUE."
-  status: approved
+  status: superseded
   approver: Diego
   date: "2026-10-03"
   source: "Aegis maintenance conversation, 2026-10-03; Diego accepted OD-21 through OD-34 defaults plus the orchestrator's conservative resolutions of audit S-02 through S-24; captured by aegis-023-release. Plan SHA256 836f81d6b492d1ef14cbf6f11dd7a14e63ceca7b47811b3f168a22fda7a5237e; audit SHA256 9c2eba21568f176c3883dfdbb22415c2d0a219951722b6678f136af395813f5e; reviewed Wave 1 baseline 58d258d30d08dfd00de6b5e5ac59b9a0916132a9."
@@ -344,4 +344,75 @@
   source: "Aegis maintenance conversation, 2026-10-03; Diego accepted OD-21 through OD-34 defaults plus the orchestrator's conservative resolutions of audit S-02 through S-24; captured by aegis-023-release. Plan SHA256 836f81d6b492d1ef14cbf6f11dd7a14e63ceca7b47811b3f168a22fda7a5237e; audit SHA256 9c2eba21568f176c3883dfdbb22415c2d0a219951722b6678f136af395813f5e; reviewed Wave 1 baseline 58d258d30d08dfd00de6b5e5ac59b9a0916132a9."
   affects:
     - framework/language/domain-rule-spec.md
+    - scripts/validate.py
+- id: D-AEGIS-035
+  title: "OD-35 — NFC map-key comparison"
+  question: "How are typed map keys compared?"
+  decision: "Keys of a resolved map<string> compare after NFC normalization, like string values. A literal or actual map with keys that collide after NFC is invalid or a non-match respectively. Record field identifiers remain raw."
+  status: approved
+  approver: Diego
+  date: "2026-10-05"
+  source: "Diego, current conversation: approved OD-35 through OD-40 and the binding acceptance clarifications for assignment aegis-024-release-governance-serializers; plan SHA256 0e61c61fa442bcb19a12a7d9f34b8e6aa42db14d19a2ca0276547b0fe9dc1668; clarifications SHA256 fed5e8875a61af00c4621f147456468e3964bf5ab675fd015bf9338a6040b6bc."
+  affects:
+    - framework/language/type-spec.md
+    - scripts/aegis_match.py
+    - scripts/validate.py
+- id: D-AEGIS-036
+  title: "OD-36 — NFC-unique raw enums"
+  question: "How are enum values declared and compared?"
+  decision: "Enum declaration values are unique after NFC normalization. Runtime enum membership and equality remain raw and case-sensitive, without Unicode normalization; literals outside the declared raw set are INVALID_ENUM_VALUE."
+  status: approved
+  approver: Diego
+  date: "2026-10-05"
+  source: "Diego, current conversation: approved OD-35 through OD-40 and the binding acceptance clarifications for assignment aegis-024-release-governance-serializers; plan SHA256 0e61c61fa442bcb19a12a7d9f34b8e6aa42db14d19a2ca0276547b0fe9dc1668; clarifications SHA256 fed5e8875a61af00c4621f147456468e3964bf5ab675fd015bf9338a6040b6bc."
+  supersedes: D-AEGIS-032
+  affects:
+    - framework/language/type-spec.md
+    - scripts/aegis_match.py
+    - scripts/validate.py
+- id: D-AEGIS-037
+  title: "OD-37 — Matchers only in expectations"
+  question: "Where may matcher keys appear?"
+  decision: "Matcher keys are allowed only in then.output, then.observe[].expect, and then.events[].input. All input positions, including given.seed.input, given.steps[].input, when.input and then.observe[].input, require concrete values and reject $-prefixed keys with MATCHER_IN_INPUT."
+  status: approved
+  approver: Diego
+  date: "2026-10-05"
+  source: "Diego, current conversation: approved OD-35 through OD-40 and the binding acceptance clarifications for assignment aegis-024-release-governance-serializers; plan SHA256 0e61c61fa442bcb19a12a7d9f34b8e6aa42db14d19a2ca0276547b0fe9dc1668; clarifications SHA256 fed5e8875a61af00c4621f147456468e3964bf5ab675fd015bf9338a6040b6bc."
+  affects:
+    - framework/language/scenario-spec.md
+    - framework/language/schemas/scenario.schema.json
+    - scripts/validate.py
+- id: D-AEGIS-038
+  title: "OD-38 — Poisoned type diagnostic precedence"
+  question: "How do malformed type definitions affect dependent validation?"
+  decision: "Report a root resolution or definition error once at its declaration or direct contract field, then propagate poison silently through dependent named, list, map and record nodes. Suppress dependent satisfiability, unused-type, opaque, typed-value and capture-type findings while independent artifacts continue validation."
+  status: approved
+  approver: Diego
+  date: "2026-10-05"
+  source: "Diego, current conversation: approved OD-35 through OD-40 and the binding acceptance clarifications for assignment aegis-024-release-governance-serializers; plan SHA256 0e61c61fa442bcb19a12a7d9f34b8e6aa42db14d19a2ca0276547b0fe9dc1668; clarifications SHA256 fed5e8875a61af00c4621f147456468e3964bf5ab675fd015bf9338a6040b6bc."
+  affects:
+    - scripts/aegis_types.py
+    - scripts/validate.py
+- id: D-AEGIS-039
+  title: "OD-39 — RFC 3339 datetime separator"
+  question: "Which separator may appear between a date and time?"
+  decision: "The Aegis RFC 3339 profile accepts only T or t between date and time. A space separator, including Python str(datetime) output, is rejected; drivers use isoformat() or an equivalent RFC 3339 serializer."
+  status: approved
+  approver: Diego
+  date: "2026-10-05"
+  source: "Diego, current conversation: approved OD-35 through OD-40 and the binding acceptance clarifications for assignment aegis-024-release-governance-serializers; plan SHA256 0e61c61fa442bcb19a12a7d9f34b8e6aa42db14d19a2ca0276547b0fe9dc1668; clarifications SHA256 fed5e8875a61af00c4621f147456468e3964bf5ab675fd015bf9338a6040b6bc."
+  affects:
+    - conformance/protocol/value-encoding.md
+    - scripts/aegis_match.py
+- id: D-AEGIS-040
+  title: "OD-40 — Required-record satisfiability"
+  question: "When is a recursive record type unsatisfiable?"
+  decision: "A record type is unsatisfiable when every finite value requires an infinite chain of required record fields. Optional, list and map edges break that chain. An unsatisfiable definition reports UNSATISFIABLE_TYPE whether used or unused."
+  status: approved
+  approver: Diego
+  date: "2026-10-05"
+  source: "Diego, current conversation: approved OD-35 through OD-40 and the binding acceptance clarifications for assignment aegis-024-release-governance-serializers; plan SHA256 0e61c61fa442bcb19a12a7d9f34b8e6aa42db14d19a2ca0276547b0fe9dc1668; clarifications SHA256 fed5e8875a61af00c4621f147456468e3964bf5ab675fd015bf9338a6040b6bc."
+  affects:
+    - framework/language/type-spec.md
+    - scripts/aegis_types.py
     - scripts/validate.py

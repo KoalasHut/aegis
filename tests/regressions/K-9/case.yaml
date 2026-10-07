@@ -1,0 +1,8 @@
+id: K-9
+kind: production-runs
+runs:
+  - {operation: MUT-39, expectedFindings: [{severity: error, code: UNSATISFIABLE_TYPE, path: framework/contexts/tasks/types.yaml, fieldPath: types.Node}]}
+  - {operation: MUT-40, expectedFindings: [{severity: error, code: UNSATISFIABLE_TYPE, path: framework/contexts/tasks/types.yaml, fieldPath: types.A}, {severity: error, code: UNSATISFIABLE_TYPE, path: framework/contexts/tasks/types.yaml, fieldPath: types.B}]}
+  - {operation: K-9-list, expectedFindings: []}
+  - {operation: K-9-optional, expectedFindings: []}
+  - {operation: K-9-map, expectedFindings: []}

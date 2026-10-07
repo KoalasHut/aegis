@@ -1,0 +1,8 @@
+id: K-2
+kind: production
+operation: MUT-32
+cli: true
+exitNonzero: true
+noTraceback: true
+expectedFindings:
+  - {severity: error, code: UNKNOWN_TYPE, path: framework/blocks/tasks/contracts/list.yaml, fieldPath: output.items}

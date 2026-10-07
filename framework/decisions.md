@@ -3,8 +3,8 @@
 This file is narrative. [decisions.yaml](decisions.yaml) is authoritative for
 validation. OD-1 through OD-5 map to D-AEGIS-001 through D-AEGIS-005; OD-8 through
 OD-12 map to D-AEGIS-008 through D-AEGIS-012; OD-14 through OD-19 map to
-D-AEGIS-014 through D-AEGIS-019; OD-21 through OD-34 map to D-AEGIS-021
-through D-AEGIS-034. Workflow decisions OD-6, OD-7, OD-13 and OD-20 are in
+D-AEGIS-014 through D-AEGIS-019; OD-21 through OD-40 map to D-AEGIS-021
+through D-AEGIS-040. Workflow decisions OD-6, OD-7, OD-13 and OD-20 are in
 [the agents YAML log](../agents/decisions.yaml).
 
 These are Aegis framework decisions, not generated-project product approvals.
@@ -152,5 +152,22 @@ in the YAML log with `status: superseded`.
   default. Verbose mode exposes dependent findings. Same-scope, warning-only,
   decision-backed allowances apply after suppression and stay visible.
 
-These decisions specify artifact and matching behavior. Release 0.2.3 does not
-claim a scenario runner, driver, imported-type integration, or five-stack corpus.
+## Validator robustness and serializer evidence approved for 0.2.4
+
+Diego approved OD-35 through OD-40 and the binding acceptance clarifications in
+the current maintenance conversation. The authoritative records retain the
+0.2.4 proposal and clarification digests. OD-36 supersedes OD-32's declaration
+uniqueness rule while retaining raw, case-sensitive runtime enum comparison.
+
+- OD-35 applies NFC comparison to keys of resolved maps and rejects colliding
+  keys; record identifiers remain raw.
+- OD-36 requires NFC-unique enum declarations while preserving raw enum
+  membership and equality at match time.
+- OD-37 permits matcher keys only in the three expectation positions.
+- OD-38 reports a broken type once at its root and propagates poison silently.
+- OD-39 accepts only `T` or `t` as the RFC 3339 date/time separator.
+- OD-40 rejects recursive required-record-only definitions as unsatisfiable.
+
+Release 0.2.4 records bounded validator and serializer evidence. It does not
+claim universal robustness, a scenario runner, driver, complete-output
+validation, report, matrix, or cross-stack behavioral conformance.

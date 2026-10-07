@@ -5,13 +5,13 @@ behavior—independent of the stack, so that core can outlive any implementation
 Explicit roles, scoped assignments and reviewable handoffs carry it from the
 first problem discussion to implementation.
 
-Version 0.2.3 adds context-owned structured types, nested typed validation,
-portable null/duration/numeric/text semantics, typed event payload assertions and
-decision-backed warning allowances. Validation does not execute scenarios or
-prove an implementation conforms. A conformance runner, driver implementation,
-qualified imported-type resolver, workflow lanes, provisional-rule flow and
-legacy extraction remain deferred. See [release notes](CHANGELOG.md) and
-[migration through 0.2.x](docs/MIGRATION-0.2.md).
+Version 0.2.4 hardens malformed-artifact diagnostics, restricts matcher syntax
+to expectation positions, defines NFC map-key and enum-declaration rules, and
+records bounded robustness and serializer evidence. Validation does not execute
+scenarios or prove an implementation conforms. A conformance runner, driver
+implementation, qualified imported-type resolver, workflow lanes, provisional-
+rule flow and legacy extraction remain deferred. See [release notes](CHANGELOG.md)
+and [migration through 0.2.x](docs/MIGRATION-0.2.md).
 
 **Learn by building:** follow the [TODO app quickstart](QUICKSTART.md) for a
 worked example with prompts, decisions, and expected outputs at every stage.
@@ -133,7 +133,8 @@ the JSON safe range; canonical future wire decimals are strings. The tested
 reference matcher documents these semantics for future runners; it does not
 execute your scenarios, validate complete driver outputs or produce conformance
 evidence. Qualified imported types and locale-aware automated ordering are not
-part of the executable 0.2.3 profile.
+ part of the executable 0.2.4 profile. The deterministic fuzz and mutation
+corpora are bounded validator evidence; they do not prove universal robustness.
 
 ## Where your work goes
 

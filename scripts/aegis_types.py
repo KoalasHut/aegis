@@ -4,6 +4,7 @@
 from collections.abc import Mapping, Sequence
 from decimal import Decimal
 import re
+import unicodedata
 
 import yaml
 
@@ -61,6 +62,20 @@ class TypeResolutionError(ValueError):
         self.code = code
 
 
+class TypeRegistry(dict):
+    """Resolved declarations plus poison metadata used by validator preflight."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.poisoned_names = set()
+        self.poisoned_expressions = set()
+
+
+def poisoned_type(name, code="INVALID_TYPE_DEFINITION"):
+    """Return an opaque sentinel which silences checks beneath one broken type."""
+    return {"kind": "opaque", "name": name, "poisoned": True, "poisonCode": code}
+
+
 def parse_type_expression(expression):
     """Parse the closed Aegis type-expression grammar into a normalized node."""
     if not isinstance(expression, str) or not expression:
@@ -96,10 +111,16 @@ def normalize_type_definition(name, definition):
         raise TypeResolutionError("INVALID_TYPE_DEFINITION", f"type {name!r} requires a description")
     if "enum" in definition:
         values = definition["enum"]
+        normalized = ([unicodedata.normalize("NFC", value) for value in values]
+                      if isinstance(values, list) and all(isinstance(value, str) for value in values)
+                      else [])
         if (not isinstance(values, list) or not values
                 or any(not isinstance(value, str) or not value for value in values)
-                or len(values) != len(set(values))):
-            raise TypeResolutionError("INVALID_TYPE_DEFINITION", f"enum {name!r} requires unique strings")
+                or len(normalized) != len(set(normalized))):
+            raise TypeResolutionError(
+                "INVALID_TYPE_DEFINITION",
+                f"enum {name!r} requires non-empty strings unique after NFC normalization",
+            )
         return {"kind": "enum", "name": name, "values": tuple(values), "description": description}
     if "fields" in definition:
         raw_fields = definition["fields"]
@@ -149,7 +170,7 @@ def build_registry(context_types=None, local_types=None, imports=None):
     if collisions:
         names = ", ".join(sorted(collisions))
         raise TypeResolutionError("TYPE_SHADOWED", f"imported types collide with local types: {names}")
-    registry = {}
+    registry = TypeRegistry()
     for declarations in (context_types, local_types, imports):
         for name, definition in declarations.items():
             if (isinstance(definition, Mapping) and definition.get("kind") in
@@ -158,6 +179,173 @@ def build_registry(context_types=None, local_types=None, imports=None):
             else:
                 registry[name] = normalize_type_definition(name, definition)
     return registry
+
+
+def preflight_registry(context_types=None, local_types=None, imports=None):
+    """Build a registry without failing fast and poison invalid definitions.
+
+    Returns ``(registry, errors)``. Each error is a mapping with ``name``,
+    ``source``, ``code`` and ``message``. References to a poisoned declaration
+    are valid but opaque, preventing one definition error from fanning out at
+    every contract and scenario use site.
+    """
+    errors = []
+    sources = []
+    for source, document in (("context", context_types), ("local", local_types),
+                             ("import", imports)):
+        try:
+            declarations = _declarations(document)
+        except TypeResolutionError as exc:
+            errors.append({"name": None, "source": source, "code": exc.code,
+                           "message": str(exc)})
+            declarations = {}
+        sources.append((source, declarations))
+
+    registry = TypeRegistry()
+    owners = {}
+    for source, declarations in sources:
+        if not isinstance(declarations, Mapping):
+            continue
+        for name, definition in declarations.items():
+            name_pattern = _QUALIFIED_TYPE_NAME if source == "import" else _LOCAL_TYPE_NAME
+            if not isinstance(name, str) or not name_pattern.fullmatch(name):
+                message = (f"imported type name must be qualified: {name!r}"
+                           if source == "import" else
+                           f"invalid local/context type name: {name!r}")
+                errors.append({"name": str(name), "source": source,
+                               "code": "INVALID_TYPE_NAME", "message": message})
+                continue
+            if name in registry:
+                errors.append({
+                    "name": name, "source": source, "code": "TYPE_SHADOWED",
+                    "message": f"{source} type {name!r} collides with {owners[name]} type",
+                })
+                registry[name] = poisoned_type(name, "TYPE_SHADOWED")
+                registry.poisoned_names.add(name)
+                continue
+            try:
+                node = (definition if isinstance(definition, Mapping) and definition.get("kind") in
+                        {"scalar", "enum", "record", "list", "map", "ref", "opaque"}
+                        else normalize_type_definition(name, definition))
+            except TypeResolutionError as exc:
+                errors.append({"name": name, "source": source, "code": exc.code,
+                               "message": str(exc)})
+                node = poisoned_type(name, exc.code)
+                registry.poisoned_names.add(name)
+            if isinstance(node, Mapping) and node.get("poisoned"):
+                registry.poisoned_names.add(name)
+            registry[name] = node
+            owners[name] = source
+
+    for name in tuple(registry):
+        if name in registry.poisoned_names:
+            continue
+        try:
+            validate_type_tree(registry[name], registry)
+        except TypeResolutionError as exc:
+            errors.append({"name": name, "source": owners.get(name, "context"),
+                           "code": exc.code, "message": str(exc)})
+            registry[name] = poisoned_type(name, exc.code)
+            registry.poisoned_names.add(name)
+
+    # Dependent declarations inherit poison silently. Compute that closure
+    # before satisfiability so one root resolution error cannot fan out into
+    # UNSATISFIABLE_TYPE or UNUSED_TYPE findings.
+    for name, node in registry.items():
+        if name not in registry.poisoned_names and _node_reaches_poison(node, registry, {name}):
+            registry.poisoned_names.add(name)
+
+    satisfiable = {name for name, node in registry.items()
+                   if name in registry.poisoned_names or node.get("kind") != "record"}
+    changed = True
+    while changed:
+        changed = False
+        for name, node in registry.items():
+            if name in satisfiable or node.get("kind") != "record":
+                continue
+            if all(_node_is_satisfiable(node["fields"][field], registry, satisfiable, set())
+                   for field in node.get("required", ())):
+                satisfiable.add(name)
+                changed = True
+    for name, node in tuple(registry.items()):
+        if node.get("kind") == "record" and name not in satisfiable:
+            errors.append({"name": name, "source": owners.get(name, "context"),
+                           "code": "UNSATISFIABLE_TYPE",
+                           "message": f"record type {name!r} has no finite value"})
+            registry[name] = poisoned_type(name, "UNSATISFIABLE_TYPE")
+            registry.poisoned_names.add(name)
+    return registry, tuple(errors)
+
+
+def validate_type_tree(declared_type, registry=None):
+    """Validate every reference reachable from one type expression."""
+    registry = registry or {}
+    node = _normalize_hint(declared_type)
+    _validate_node_references(node, registry, set())
+    return node
+
+
+def is_poisoned_type(declared_type, registry=None):
+    """Whether a type expression reaches a poisoned declaration."""
+    registry = registry or {}
+    return _node_reaches_poison(_normalize_hint(declared_type), registry, set())
+
+
+def _validate_node_references(node, registry, active):
+    if node is None:
+        return
+    kind = node.get("kind")
+    if kind == "ref":
+        name = node.get("name")
+        if name not in registry:
+            raise TypeResolutionError("UNKNOWN_TYPE", f"unknown type: {name}")
+        if name in active or registry[name].get("poisoned"):
+            return
+        _validate_node_references(registry[name], registry, active | {name})
+    elif kind == "record":
+        for child in node.get("fields", {}).values():
+            _validate_node_references(child, registry, active)
+    elif kind == "list":
+        _validate_node_references(node.get("item"), registry, active)
+    elif kind == "map":
+        _validate_node_references(node.get("value"), registry, active)
+
+
+def _node_reaches_poison(node, registry, active):
+    if node is None:
+        return False
+    if node.get("poisoned"):
+        return True
+    kind = node.get("kind")
+    if kind == "ref":
+        name = node.get("name")
+        if name not in registry or name in active:
+            return False
+        return _node_reaches_poison(registry[name], registry, active | {name})
+    if kind == "record":
+        return any(_node_reaches_poison(child, registry, active)
+                   for child in node.get("fields", {}).values())
+    if kind == "list":
+        return _node_reaches_poison(node.get("item"), registry, active)
+    if kind == "map":
+        return _node_reaches_poison(node.get("value"), registry, active)
+    return False
+
+
+def _node_is_satisfiable(node, registry, satisfiable, active):
+    kind = node.get("kind")
+    if kind in {"scalar", "enum", "opaque", "list", "map"}:
+        return True
+    if kind == "ref":
+        return node.get("name") in satisfiable
+    if kind == "record":
+        marker = id(node)
+        if marker in active:
+            return False
+        return all(_node_is_satisfiable(node["fields"][field], registry, satisfiable,
+                                        active | {marker})
+                   for field in node.get("required", ()))
+    return True
 
 
 def load_types_document(document):
